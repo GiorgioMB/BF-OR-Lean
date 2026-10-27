@@ -2,7 +2,11 @@
   Local structure of an edge `(i, j)`: common neighbours `C`, unique neighbours
   `U_i`, `U_j`, cross-edge vertices `ξ`, 4-cycle closers, cross matchings.
 -/
-import OllivierBF.Transport
+module
+
+public import OllivierBF.Transport
+
+@[expose] public section
 
 open Finset
 

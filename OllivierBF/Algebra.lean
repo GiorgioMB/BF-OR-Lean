@@ -2,7 +2,11 @@
   Real-number lemmas used by the main results. Nothing here mentions graphs:
   `a = ρ_min`, `b = ρ_max`, `t = △(i,j)`, `m = 𝔪(i,j)`, `s = 𝔪/ρ_max`.
 -/
-import Mathlib
+module
+
+public import Mathlib
+
+@[expose] public section
 
 set_option linter.unusedSectionVars false
 

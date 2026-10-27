@@ -2,7 +2,11 @@
   The BF interval (Section 5) and the sharpened interval.
   Convention throughout: `ρ_i ≤ ρ_j`, so `a = ρ_i = ρ_min`, `b = ρ_j = ρ_max`.
 -/
-import OllivierBF.Bounds
+module
+
+public import OllivierBF.Bounds
+
+@[expose] public section
 
 open Finset
 
@@ -42,7 +46,7 @@ lemma cBF_le_piece3 (cited : CitedFacts G d) (hij : G.Adj i j) (hle : ρ G i ≤
   have hmin : ¬ ρmin G i j ≤ 1 := by rw [ρmin_eq hle]; linarith
   have h11 := cited.topping11 i j hij (by rw [ρmin_eq hle]; exact h2)
   unfold cBF piece3
-  rw [if_neg hmin, bfS_eq, bfT_eq hle]
+  rw [ite_eq_right hmin, bfS_eq, bfT_eq hle]
   unfold matchStat at h11
   rw [ρmax_eq hle] at h11
   linarith
@@ -186,11 +190,11 @@ lemma Xi_le_budget (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) (h2 : 2 ≤ ρ G 
     (Xi G i j : ℝ) ≤ ρ G j * (ρ G j - 1) * (max (ζ - bfS G i j) 0 - bfT G i j * tri G i j) := by
   have hmin : ¬ ρmin G i j ≤ 1 := by rw [ρmin_eq hle]; linarith
   have hbf : bfS G i j + bfT G i j * tri G i j + C4 G i j ≤ ζ := by
-    unfold cBF at hζ; rwa [if_neg hmin] at hζ
+    unfold cBF at hζ; rwa [ite_eq_right hmin] at hζ
   have hsho : 0 ≤ ρ G j * (ρ G j - 1) := mul_nonneg (by linarith) (by linarith)
   by_cases hv : varpi G i j = 0
   · rw [Xi_eq_zero_of_varpi hv]
-    have hC : C4 G i j = 0 := by unfold C4; rw [if_pos hv]
+    have hC : C4 G i j = 0 := by unfold C4; rw [ite_eq_left hv]
     rw [hC] at hbf
     have : 0 ≤ max (ζ - bfS G i j) 0 - bfT G i j * tri G i j := by
       have := le_max_left (ζ - bfS G i j) 0; linarith
@@ -201,7 +205,7 @@ lemma Xi_le_budget (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) (h2 : 2 ≤ ρ G 
     have hden : 0 < (varpi G i j : ℝ) * ρmax G i j :=
       mul_pos (by linarith) (ρmax_pos hij)
     have hC : C4 G i j = (Xi G i j : ℝ) / ((varpi G i j : ℝ) * ρmax G i j) := by
-      unfold C4; rw [if_neg hv]
+      unfold C4; rw [ite_eq_right hv]
     -- `Ξ = 𝔠₄ ϖ ρ_max ≤ 𝔠₄ ♯*`
     have hXi : (Xi G i j : ℝ) = C4 G i j * ((varpi G i j : ℝ) * ρmax G i j) := by
       rw [hC, div_mul_cancel₀ _ hden.ne']
@@ -263,7 +267,7 @@ lemma triMax_nonneg (hij : G.Adj i j) (ζ : ℝ) : 0 ≤ triMax G i j ζ := by
   unfold triMax
   exact le_min (by linarith) (div_nonneg (le_max_right _ _) (bfT_pos' hij).le)
 
-lemma psiHat_le_bound (hij : G.Adj i j) (ζ t : ℝ) (ht : t ≤ ρ G i) :
+lemma psiHat_le_bound (_hij : G.Adj i j) (ζ t : ℝ) (ht : t ≤ ρ G i) :
     psiHat G i j ζ t ≤ (2 + ρ G i) * w G j := by
   unfold psiHat
   simp only
@@ -282,7 +286,7 @@ theorem bf_upper (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.Adj i 
   have hmin : ¬ ρmin G i j ≤ 1 := by rw [ρmin_eq hle]; linarith
   have hT : 0 < bfT G i j := bfT_pos' hij
   have hbf : bfS G i j + bfT G i j * tri G i j + C4 G i j ≤ ζ := by
-    unfold cBF at hζ; rwa [if_neg hmin] at hζ
+    unfold cBF at hζ; rwa [ite_eq_right hmin] at hζ
   have hC0 : 0 ≤ C4 G i j := C4_nonneg hij
   have hmem : (tri G i j : ℝ) ∈ Set.Icc 0 (triMax G i j ζ) := by
     refine ⟨Nat.cast_nonneg _, le_min (tri_le hij) ?_⟩
@@ -363,7 +367,7 @@ theorem sharpened_interval (hd : GraphMetric G d) (cited : CitedFacts G d) (hij 
   · have hmin : ¬ ρmin G i j ≤ 1 := by rw [ρmin_eq hle]; linarith
     have hT : 0 < bfT G i j := bfT_pos' hij
     have hbf : bfS G i j + bfT G i j * tri G i j + C4 G i j ≤ cBF G i j := by
-      unfold cBF; simp only [if_neg hmin, le_refl]
+      unfold cBF; simp only [ite_eq_right hmin, le_refl]
     have hC0 : 0 ≤ C4 G i j := C4_nonneg hij
     have hmem : (tri G i j : ℝ) ∈ Set.Icc 0 (triMax G i j (cBF G i j)) := by
       refine ⟨Nat.cast_nonneg _, le_min (tri_le hij) ?_⟩

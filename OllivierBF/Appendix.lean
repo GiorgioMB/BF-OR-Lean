@@ -2,7 +2,11 @@
   Appendix B (comparison with Bhattacharya–Mukherjee) and Appendix C (reverse direction:
   what an OR value certifies about BF), rebuilt on the bounds of `Bounds.lean`.
 -/
-import OllivierBF.Interval
+module
+
+public import OllivierBF.Interval
+
+@[expose] public section
 
 open Finset
 
@@ -111,11 +115,11 @@ lemma bm_core_eq_iff (ha : 1 ≤ a) (hab : a ≤ b) (ht : 0 ≤ t) (hm : 0 ≤ m
     rcases hint with h | h
     · rw [min_eq_right (by linarith : m + 2 ≤ a - t)]
       refine (min_le_right _ _).trans ((min_le_right _ _).trans (le_of_eq ?_))
-      field_simp <;> ring
+      field_simp; ring
     · subst h
       rw [min_eq_left (by linarith : a - t ≤ a - 1 - t + 2)]
       refine (min_le_left _ _).trans (le_of_eq ?_)
-      field_simp <;> ring
+      field_simp; ring
 
 end bmCore
 
@@ -197,7 +201,7 @@ theorem LBM_eq_Lsq_iff (hij : G.Adj i j) : LBM G i j = Lsq (G := G) i j ↔ ρ G
 theorem or_to_bf_mixing (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.Adj i j)
     (hle : ρ G j ≤ ρ G i) {ϑ : ℝ} (h : cOR G d i j ≤ ϑ) :
     cBF G i j ≤ (ϑ + (w G j - w G i) * (1 - 2 / ρ G i)) / (1 - w G j) := by
-  have hmix := mixing_transfer hd cited hij hle
+  have hmix := mixing_transfer hd cited.bourne hij hle
   have htop := cited.topping i j hij
   have hρi := ρ_pos hij
   have hwle : w G i ≤ w G j := w_anti hle
@@ -235,7 +239,7 @@ theorem or_to_bf_elementary (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G
     nlinarith [h, hq, this]
   have hmin : ¬ ρmin G i j ≤ 1 := by rw [ρmin_eq hle]; linarith
   unfold cBF
-  rw [if_neg hmin]
+  rw [ite_eq_right hmin]
   have hT := bfT_pos' hij
   nlinarith [mul_le_mul_of_nonneg_left (le_min (tri_le hij) ht) hT.le]
 
@@ -256,7 +260,7 @@ theorem or_to_bf_lower (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.
     linarith
   have hmin : ¬ ρmin G i j ≤ 1 := by rw [ρmin_eq hle]; linarith
   unfold cBF
-  rw [if_neg hmin]
+  rw [ite_eq_right hmin]
   have hT := bfT_pos' hij
   nlinarith [mul_le_mul_of_nonneg_left ht hT.le, C4_nonneg (G := G) hij]
 
@@ -319,13 +323,13 @@ theorem or_to_bf_lower_env (hd : GraphMetric G d) (cited : CitedFacts G d) (hij 
     t₀ ≤ tri G i j ∧ bfS G i j + bfT G i j * t₀ ≤ cBF G i j := by
   have htri : t₀ ≤ tri G i j := by
     by_contra hlt
-    push_neg at hlt
+    push Not at hlt
     have := ht₀ (tri G i j) hlt
     linarith [coverage_envelope hd cited hij hle]
   refine ⟨htri, ?_⟩
   have hmin : ¬ ρmin G i j ≤ 1 := by rw [ρmin_eq hle]; linarith
   unfold cBF
-  rw [if_neg hmin]
+  rw [ite_eq_right hmin]
   have hT := bfT_pos' hij
   have ht : (t₀ : ℝ) ≤ tri G i j := by exact_mod_cast htri
   nlinarith [mul_le_mul_of_nonneg_left ht hT.le, C4_nonneg (G := G) hij]
@@ -339,8 +343,8 @@ theorem or_to_bf_old (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.Ad
   have hwle : w G i ≤ w G j := w_anti hle
   have hwi1 : w G i < 1 := w_lt_one hij
   have hwj1 : w G j < 1 := w_lt_one hij.symm
-  have hdom := mixing_dominates hd cited hij hle (L := cLLY G d i j) le_rfl
-  have hmix := mixing_transfer hd cited hij hle
+  have hdom := mixing_dominates hd cited.bourne hij hle (L := cLLY G d i j) le_rfl
+  have hmix := mixing_transfer hd cited.bourne hij hle
   have htop := cited.topping i j hij
   have hmono := lamOld_mono (Δ := w G j - w G i) hwle hwj1.le htop
   have hall : lamOld (w G i) (w G j) (w G j - w G i) (cBF G i j) ≤ ϑ :=

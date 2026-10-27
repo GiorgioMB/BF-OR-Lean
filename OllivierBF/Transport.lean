@@ -6,7 +6,11 @@
   inequality, obtained either from an explicit coupling (`W1_le_cost`) or from a
   bound valid for every coupling (`le_W1`).
 -/
-import Mathlib
+module
+
+public import Mathlib
+
+@[expose] public section
 
 open Finset
 

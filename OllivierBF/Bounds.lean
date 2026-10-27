@@ -4,8 +4,12 @@
   Status: no `sorry`s; every coupling is constructed explicitly. See README.md for the
   build and for the published results that enter as hypotheses (`CitedFacts`).
 -/
-import OllivierBF.Curvature
-import OllivierBF.Algebra
+module
+
+public import OllivierBF.Curvature
+public import OllivierBF.Algebra
+
+@[expose] public section
 
 open Finset
 
@@ -32,15 +36,15 @@ lemma cost_ge_two_offdiag_sub_unit (hd : GraphMetric G d) {μ ν : V → ℝ} {�
     rw [← Finset.add_sum_erase _ (fun y => if x = y then 0 else π x y) (Finset.mem_univ x)]
     simp only [ite_true, zero_add, add_sub_cancel_left]
     refine Finset.sum_congr rfl fun y hy => ?_
-    rw [if_neg (fun e => (Finset.mem_erase.1 hy).1 e.symm)]
+    rw [ite_eq_right (fun e => (Finset.mem_erase.1 hy).1 e.symm)]
   simp only [hrow, Finset.mul_sum, ← Finset.sum_sub_distrib]
   unfold cost
   refine Finset.sum_le_sum fun x _ => Finset.sum_le_sum fun y _ => ?_
   by_cases hxy : x = y
   · subst hxy; simp [SimpleGraph.irrefl, hd.self]
   · by_cases ha : G.Adj x y
-    · rw [if_neg hxy, if_pos ha, hd.adj ha]; linarith
-    · rw [if_neg hxy, if_neg ha]
+    · rw [ite_eq_right hxy, ite_eq_left ha, hd.adj ha]; linarith
+    · rw [ite_eq_right hxy, ite_eq_right ha]
       nlinarith [hd.two_le hxy ha, h.1 x y]
 
 /-! ### Theorem `thm:lazy-quadrangle` -/
@@ -62,28 +66,28 @@ lemma matching_coupling {M : Finset (V × V)} (hM : IsCrossMatching G i j M) (c 
   · show ∑ y, (if (x, y) ∈ M then c else 0) = (if x ∈ M.image Prod.fst then c else 0)
     by_cases hx : x ∈ M.image Prod.fst
     · obtain ⟨e, he, rfl⟩ := Finset.mem_image.1 hx
-      rw [if_pos hx, Finset.sum_eq_single e.2]
+      rw [ite_eq_left hx, Finset.sum_eq_single e.2]
       · simp [he]
       · intro y _ hy
-        rw [if_neg]
+        rw [ite_eq_right]
         intro hmem
         exact hy (congrArg Prod.snd (hM.2.1 e he (e.1, y) hmem rfl)).symm
       · simp
-    · rw [if_neg hx]
-      refine Finset.sum_eq_zero fun y _ => if_neg fun hmem => hx ?_
+    · rw [ite_eq_right hx]
+      refine Finset.sum_eq_zero fun y _ => ite_eq_right fun hmem => hx ?_
       exact Finset.mem_image.2 ⟨(x, y), hmem, rfl⟩
   · show ∑ x, (if (x, y) ∈ M then c else 0) = (if y ∈ M.image Prod.snd then c else 0)
     by_cases hy : y ∈ M.image Prod.snd
     · obtain ⟨e, he, rfl⟩ := Finset.mem_image.1 hy
-      rw [if_pos hy, Finset.sum_eq_single e.1]
+      rw [ite_eq_left hy, Finset.sum_eq_single e.1]
       · simp [he]
       · intro x _ hx
-        rw [if_neg]
+        rw [ite_eq_right]
         intro hmem
         exact hx (congrArg Prod.fst (hM.2.2 e he (x, e.2) hmem rfl)).symm
       · simp
-    · rw [if_neg hy]
-      refine Finset.sum_eq_zero fun x _ => if_neg fun hmem => hy ?_
+    · rw [ite_eq_right hy]
+      refine Finset.sum_eq_zero fun x _ => ite_eq_right fun hmem => hy ?_
       exact Finset.mem_image.2 ⟨(x, y), hmem, rfl⟩
 
 lemma matching_cost (hd : GraphMetric G d) {M : Finset (V × V)} (hM : IsCrossMatching G i j M)
@@ -154,7 +158,7 @@ lemma exists_residual_coupling (hd : GraphMetric G d) (hij : G.Adj i j) (hle : �
     have h2 : ρ G j + 1 ≠ 0 := by linarith
     rw [hcW, card_uniq_real hij, card_uniq_real hij.symm, tri_comm j i]
     simp only [w]
-    field_simp <;> ring
+    field_simp; ring
   have hzero : ((uniq G j i \ M.image Prod.snd).card : ℝ) * w G j = 0 →
       w G i - w G j = 0 ∧ ((uniq G i j).card : ℝ) * w G i - M.card * w G j = 0 := by
     intro h
@@ -185,7 +189,7 @@ lemma exists_residual_coupling (hd : GraphMetric G d) (hij : G.Adj i j) (hle : �
       y ∈ uniq G j i \ M.image Prod.snd := by
     intro x y h
     by_contra hy
-    rw [if_neg hy] at h
+    rw [ite_eq_right hy] at h
     exact lt_irrefl _ h
   have hadjU : ∀ y, y ∈ uniq G j i \ M.image Prod.snd → G.Adj j y :=
     fun y hy => (mem_uniq.1 (Finset.mem_sdiff.1 hy).1).2.1
@@ -198,11 +202,11 @@ lemma exists_residual_coupling (hd : GraphMetric G d) (hij : G.Adj i j) (hle : �
     (ν := fun y => if y ∈ uniq G j i \ M.image Prod.snd then
       (w G i - w G j) / (((uniq G j i \ M.image Prod.snd).card : ℝ) * w G j) * w G j else 0)
     (M := w G i - w G j) (D := 1)
-    (fun x => by (try dsimp only); split_ifs <;> linarith) (hνnn _ hδ0)
+    (fun x => by split_ifs <;> linarith) (hνnn _ hδ0)
     (by simp [Finset.sum_ite_eq']) (hνmass _ fun h => (hzero h).1) zero_le_one
     (fun x y hx hy => by
       have hxj : x = j := by
-        by_contra h; (try dsimp only at hx); rw [if_neg h] at hx; exact lt_irrefl _ hx
+        by_contra h; rw [ite_eq_right h] at hx; exact lt_irrefl _ hx
       rw [hxj]; exact (hd.adj (hadjU y (hνpos _ y hy))).le)
   -- piece 3: `{i} ∪ C → W'` through `j`, cost 2
   have hjO : j ∈ overlap (G := G) i j := by simp [overlap]
@@ -217,12 +221,12 @@ lemma exists_residual_coupling (hd : GraphMetric G d) (hij : G.Adj i j) (hle : �
       ((1 + tri G i j) * (w G i - w G j)) / (((uniq G j i \ M.image Prod.snd).card : ℝ) * w G j)
         * w G j else 0)
     (M := (1 + tri G i j) * (w G i - w G j)) (D := 2)
-    (fun x => by (try dsimp only); split_ifs <;> linarith) (hνnn _ (mul_nonneg (by linarith) hδ0))
-    (by beta_reduce; rw [Finset.sum_ite_mem, Finset.univ_inter, Finset.sum_const, nsmul_eq_mul, hcO])
+    (fun x => by split_ifs <;> linarith) (hνnn _ (mul_nonneg (by linarith) hδ0))
+    (by rw [Finset.sum_ite_mem, Finset.univ_inter, Finset.sum_const, nsmul_eq_mul, hcO])
     (hνmass _ fun h => by rw [(hzero h).1, mul_zero]) (by norm_num : (0 : ℝ) ≤ 2)
     (fun x y hx hy => by
       have hxO : x ∈ (overlap (G := G) i j).erase j := by
-        by_contra h; (try dsimp only at hx); rw [if_neg h] at hx; exact lt_irrefl _ hx
+        by_contra h; rw [ite_eq_right h] at hx; exact lt_irrefl _ hx
       obtain ⟨hxj, hx'⟩ := Finset.mem_erase.1 hxO
       have hadj : G.Adj x j := by
         simp only [overlap, Finset.mem_insert, mem_common] at hx'
@@ -239,12 +243,11 @@ lemma exists_residual_coupling (hd : GraphMetric G d) (hij : G.Adj i j) (hle : �
         / (((uniq G j i \ M.image Prod.snd).card : ℝ) * w G j) * w G j else 0)
     (M := ((uniq G i j).card : ℝ) * w G i - M.card * w G j) (D := 3)
     (fun x => by
-      (try dsimp only)
       by_cases hx : x ∈ M.image Prod.fst
-      · rw [if_pos (hMU hx), if_pos hx]; linarith
-      · rw [if_neg hx, sub_zero]; split_ifs <;> linarith)
+      · rw [ite_eq_left (hMU hx), ite_eq_left hx]; linarith
+      · rw [ite_eq_right hx, sub_zero]; split_ifs <;> linarith)
     (hνnn _ hR0)
-    (by beta_reduce
+    (by
         rw [Finset.sum_sub_distrib, Finset.sum_ite_mem, Finset.sum_ite_mem, Finset.univ_inter,
           Finset.univ_inter, Finset.sum_const, Finset.sum_const, nsmul_eq_mul, nsmul_eq_mul, hcMU])
     (hνmass _ fun h => (hzero h).2) (by norm_num : (0 : ℝ) ≤ 3)
@@ -252,32 +255,30 @@ lemma exists_residual_coupling (hd : GraphMetric G d) (hij : G.Adj i j) (hle : �
       have hxU : x ∈ uniq G i j := by
         by_contra h
         have h' : x ∉ M.image Prod.fst := fun h'' => h (hMU h'')
-        (try dsimp only at hx); rw [if_neg h, if_neg h', sub_zero] at hx; exact lt_irrefl _ hx
+        rw [ite_eq_right h, ite_eq_right h', sub_zero] at hx; exact lt_irrefl _ hx
       exact hd.le_three (mem_uniq.1 hxU).2.1.symm hij (hadjU y (hνpos _ y hy)))
   -- glue the four pieces
   have hall := hP1.add (hP2.add (hP3.add hP4))
   refine ⟨_, hall.congr (fun x => ?_) (fun y => ?_), ?_⟩
   · -- the supplies add up to the residual of `m_i`
-    beta_reduce
     rw [lazy_resid_i hij hle x]
     by_cases hxj : x = j
     · have h1 : x ∉ (overlap (G := G) i j).erase j := by simp [hxj]
       have h2 : x ∈ overlap (G := G) i j := by rw [hxj]; exact hjO
-      rw [if_pos hxj, if_neg h1, if_pos h2]; ring
+      rw [ite_eq_left hxj, ite_eq_right h1, ite_eq_left h2]; ring
     · have h1 : (x ∈ (overlap (G := G) i j).erase j) ↔ x ∈ overlap (G := G) i j := by
         simp [Finset.mem_erase, hxj]
-      rw [if_neg hxj]
+      rw [ite_eq_right hxj]
       by_cases hO : x ∈ overlap (G := G) i j
-      · rw [if_pos (h1.2 hO), if_pos hO]; ring
-      · rw [if_neg (fun h => hO (h1.1 h)), if_neg hO]; ring
+      · rw [ite_eq_left (h1.2 hO), ite_eq_left hO]; ring
+      · rw [ite_eq_right (fun h => hO (h1.1 h)), ite_eq_right hO]; ring
   · -- the demands add up to the residual of `m_j`
-    beta_reduce
     rw [lazy_resid_j hij hle y]
     by_cases hy : y ∈ uniq G j i \ M.image Prod.snd
     · obtain ⟨hyU, hyM⟩ := Finset.mem_sdiff.1 hy
       have hpos : 0 < ((uniq G j i \ M.image Prod.snd).card : ℝ) * w G j :=
         mul_pos (by exact_mod_cast Finset.card_pos.2 ⟨y, hy⟩) hwj
-      simp only [if_pos hy, if_neg hyM, if_pos hyU, zero_add]
+      simp only [ite_eq_left hy, ite_eq_right hyM, ite_eq_left hyU, zero_add]
       have key : (w G i - w G j) / (((uniq G j i \ M.image Prod.snd).card : ℝ) * w G j) * w G j
           + ((1 + tri G i j) * (w G i - w G j)) / (((uniq G j i \ M.image Prod.snd).card : ℝ) * w G j)
             * w G j
@@ -287,11 +288,11 @@ lemma exists_residual_coupling (hd : GraphMetric G d) (hij : G.Adj i j) (hle : �
             / (((uniq G j i \ M.image Prod.snd).card : ℝ) * w G j) * w G j := by ring
       rw [← hbal, div_self hpos.ne', one_mul] at key
       linarith
-    · simp only [if_neg hy, add_zero]
+    · simp only [ite_eq_right hy, add_zero]
       by_cases hyM : y ∈ M.image Prod.snd
-      · rw [if_pos hyM, if_pos (hMW hyM)]
+      · rw [ite_eq_left hyM, ite_eq_left (hMW hyM)]
       · have hyU : y ∉ uniq G j i := fun h => hy (Finset.mem_sdiff.2 ⟨h, hyM⟩)
-        rw [if_neg hyM, if_neg hyU]
+        rw [ite_eq_right hyM, ite_eq_right hyU]
   · -- total cost
     rw [cost_add, cost_add, cost_add]
     nlinarith [hC1, hC2, hC3, hC4]
@@ -328,7 +329,7 @@ theorem lazy_quadrangle (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i �
       + 2 * (1 + tri G i j) * (1 / (ρ G i + 1) - 1 / (ρ G j + 1))
       + 3 * ((ρ G i - 1 - tri G i j) * (1 / (ρ G i + 1)) - matchNum G i j * (1 / (ρ G j + 1))))
       = (3 + tri G i j) / (ρ G i + 1) + (3 + 2 * tri G i j + 2 * matchNum G i j) / (ρ G j + 1) - 2 := by
-    field_simp <;> ring
+    field_simp; ring
   linarith
 
 end lazyQuadrangle
@@ -343,7 +344,7 @@ variable {i j : V}
 along edges is at most `τ` and at most `δ + min(△ δ, τ) + min(|ξ_i| w_i, |ξ_j| w_j)`: every
 off-diagonal unit ends in `U_j` (`lazy_resid_j`), and a unit-distance move into `U_j` starts at
 `j`, at a common neighbour, or in `ξ_i` along a cross edge, never at `i`. -/
-lemma unit_mass_le (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j)
+lemma unit_mass_le (_hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j)
     {π : V → V → ℝ} (hπ : IsCoupling (mLazy G i) (mLazy G j) π)
     (hsat : ∀ k, π k k = min (mLazy G i k) (mLazy G j k)) :
     ∑ x, ∑ y, (if G.Adj x y then π x y else 0) ≤
@@ -367,14 +368,14 @@ lemma unit_mass_le (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ
   have hzero_col : ∀ x y, x ≠ y → y ∉ uniq G j i → π x y = 0 := by
     intro x y hxy hy
     have hc := hcol y
-    rw [lazy_resid_j hij hle y, if_neg hy] at hc
+    rw [lazy_resid_j hij hle y, ite_eq_right hy] at hc
     exact (Finset.sum_eq_zero_iff_of_nonneg fun x _ => hπ.1 x y).1 hc x
       (Finset.mem_erase.2 ⟨hxy, Finset.mem_univ x⟩)
   -- (b) off-diagonal mass only leaves the support of the residual of `m_i`
   have hzero_row : ∀ x y, x ≠ y → x ∉ overlap (G := G) i j → x ∉ uniq G i j → π x y = 0 := by
     intro x y hxy hO hU
     have hr := hrow x
-    rw [lazy_resid_i hij hle x, if_neg hO, if_neg hU, add_zero] at hr
+    rw [lazy_resid_i hij hle x, ite_eq_right hO, ite_eq_right hU, add_zero] at hr
     exact (Finset.sum_eq_zero_iff_of_nonneg fun y _ => hπ.1 x y).1 hr y
       (Finset.mem_erase.2 ⟨hxy.symm, Finset.mem_univ y⟩)
   -- unit-distance mass leaving `x`, and entering `y`
@@ -385,12 +386,12 @@ lemma unit_mass_le (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ
     intro x
     rw [← hrow x, hF]
     (try dsimp only)
-    rw [← Finset.add_sum_erase _ _ (Finset.mem_univ x), if_neg (SimpleGraph.irrefl G), zero_add]
+    rw [← Finset.add_sum_erase _ _ (Finset.mem_univ x), ite_eq_right (SimpleGraph.irrefl G), zero_add]
     exact Finset.sum_le_sum fun y _ => by split_ifs <;> first | exact le_rfl | exact hπ.1 x y
   have hFcol : ∀ y, ∑ x, (if G.Adj x y then π x y else 0) ≤
       mLazy G j y - min (mLazy G i y) (mLazy G j y) := by
     intro y
-    rw [← hcol y, ← Finset.add_sum_erase _ _ (Finset.mem_univ y), if_neg (SimpleGraph.irrefl G),
+    rw [← hcol y, ← Finset.add_sum_erase _ _ (Finset.mem_univ y), ite_eq_right (SimpleGraph.irrefl G),
       zero_add]
     exact Finset.sum_le_sum fun x _ => by split_ifs <;> first | exact le_rfl | exact hπ.1 x y
   -- the total is `∑ x, F x`
@@ -442,7 +443,7 @@ lemma unit_mass_le (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ
     rw [lazy_resid_i hij hle j] at h
     have hjO : j ∈ overlap (G := G) i j := by simp [overlap]
     have hjU : j ∉ uniq G i j := by simp [mem_uniq]
-    rwa [if_pos hjO, if_neg hjU, add_zero] at h
+    rwa [ite_eq_left hjO, ite_eq_right hjU, add_zero] at h
   have hFC1 : ∑ x ∈ common G i j, F x ≤ tri G i j * (w G i - w G j) := by
     calc ∑ x ∈ common G i j, F x ≤ ∑ x ∈ common G i j, (w G i - w G j) := by
           refine Finset.sum_le_sum fun x hx => ?_
@@ -450,7 +451,7 @@ lemma unit_mass_le (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ
           rw [lazy_resid_i hij hle x] at h
           have hxO : x ∈ overlap (G := G) i j := by simp [overlap, hx]
           have hxU : x ∉ uniq G i j := fun h' => (mem_uniq.1 h').2.2 (mem_common.1 hx).2
-          rwa [if_pos hxO, if_neg hxU, add_zero] at h
+          rwa [ite_eq_left hxO, ite_eq_right hxU, add_zero] at h
       _ = tri G i j * (w G i - w G j) := by simp [Finset.sum_const, tri]; ring
   have hFC2 : ∑ x ∈ common G i j, F x ≤ (uniq G j i).card * w G j :=
     (Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _) fun x _ _ => hF0 x).trans hτ
@@ -474,7 +475,7 @@ lemma unit_mass_le (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ
             simp only [overlap, Finset.mem_insert, mem_common, not_or]
             obtain ⟨h1, h2, h3⟩ := mem_uniq.1 hxU
             exact ⟨fun e => by rw [e] at h2; exact SimpleGraph.irrefl G h2, h1, fun h' => h3 h'.2⟩
-          rwa [if_neg hxO, if_pos hxU, zero_add] at h
+          rwa [ite_eq_right hxO, ite_eq_left hxU, zero_add] at h
       _ = (xi G i j).card * w G i := by rw [Finset.sum_const, nsmul_eq_mul]
   have hFU2 : ∑ x ∈ uniq G i j, F x ≤ (xi G j i).card * w G j := by
     have hswap : ∑ x ∈ uniq G i j, F x
@@ -497,7 +498,7 @@ lemma unit_mass_le (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ
           refine (Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _)
             fun x _ _ => by split_ifs <;> first | exact hπ.1 x y | exact le_rfl).trans ?_
           refine (hFcol y).trans (le_of_eq ?_)
-          rw [lazy_resid_j hij hle y, if_pos hyU]
+          rw [lazy_resid_j hij hle y, ite_eq_left hyU]
       _ = (xi G j i).card * w G j := by rw [Finset.sum_const, nsmul_eq_mul]
   have h1 := le_min hFC1 hFC2
   have h2 := le_min hFU1 hFU2
@@ -524,7 +525,7 @@ theorem lazy_envelope (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.A
     have hρj := ρ_pos hij.symm
     have h1 : ρ G j + 1 ≠ 0 := by linarith
     rw [hU, tri_comm]
-    simp only [w]; field_simp <;> ring
+    simp only [w]; field_simp; ring
   have hW : max (1 - (2 + (tri G i j : ℝ)) * w G j)
       (2 - 2 * ((2 + (tri G i j : ℝ)) * w G j) - ((w G i - w G j)
         + min (tri G i j * (w G i - w G j)) ((uniq G j i).card * w G j)
@@ -694,7 +695,7 @@ lemma exists_jl_coupling_le (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G
     · exact le_rfl
   have hWpos : ∀ x : ℝ, ∀ y, 0 < (if y ∈ uniq G j i \ M.image Prod.snd then x / D * vj else 0) →
       y ∈ uniq G j i \ M.image Prod.snd := by
-    intro x y h; by_contra hy; rw [if_neg hy] at h; exact lt_irrefl _ h
+    intro x y h; by_contra hy; rw [ite_eq_right hy] at h; exact lt_irrefl _ h
   -- piece 0: keep `v_j` on `C`; piece 1: the matching
   have hκ0 : ∀ k, 0 ≤ (if k ∈ common G i j then vj else 0) := fun k => by
     split_ifs
@@ -707,22 +708,21 @@ lemma exists_jl_coupling_le (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G
   obtain ⟨π2, hP2, hC2⟩ := exists_piece_coupling (d := d) (M := a2) (D := 1)
     (μ := fun x => if x = j then a2 else 0)
     (ν := fun y => if y ∈ uniq G j i \ M.image Prod.snd then a2 / D * vj else 0)
-    (fun x => by (try dsimp only); split_ifs <;> first | exact ha20 | exact le_rfl) (hWnn _ ha20)
+    (fun x => by split_ifs <;> first | exact ha20 | exact le_rfl) (hWnn _ ha20)
     (by simp [Finset.sum_ite_eq']) (hWmass _ fun h => (hDz h).1) zero_le_one
     (fun x y hx hy => by
-      have hxj : x = j := by by_contra h; (try dsimp only at hx); rw [if_neg h] at hx; exact lt_irrefl _ hx
+      have hxj : x = j := by by_contra h; rw [ite_eq_right h] at hx; exact lt_irrefl _ hx
       rw [hxj]; exact (hd.adj (hadjU y (hWpos _ y hy))).le)
   -- piece 3: `C → W'` through `j`, in proportion to the residuals on `C`
   obtain ⟨π3, hP3, hC3⟩ := exists_piece_coupling (d := d) (M := a3) (D := 2)
     (μ := fun x => if x ∈ common G i j then a3 / (A - B) * (vi - vj) else 0)
     (ν := fun y => if y ∈ uniq G j i \ M.image Prod.snd then a3 / D * vj else 0)
     (fun x => by
-      (try dsimp only); split_ifs
+      split_ifs
       · exact mul_nonneg (div_nonneg ha30 (by linarith only [hBA])) (by linarith only [hvle])
       · exact le_rfl)
     (hWnn _ ha30)
     (by
-      beta_reduce
       rw [Finset.sum_ite_mem, Finset.univ_inter, Finset.sum_const, nsmul_eq_mul]
       calc ((common G i j).card : ℝ) * (a3 / (A - B) * (vi - vj)) = a3 / (A - B) * (A - B) := by
             rw [hAB, tri]; ring
@@ -730,7 +730,7 @@ lemma exists_jl_coupling_le (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G
     (hWmass _ fun h => (hDz h).2.1) (by norm_num)
     (fun x y hx hy => by
       have hxC : x ∈ common G i j := by
-        by_contra h; (try dsimp only at hx); rw [if_neg h] at hx; exact lt_irrefl _ hx
+        by_contra h; rw [ite_eq_right h] at hx; exact lt_irrefl _ hx
       exact hd.le_two (mem_common.1 hxC).2.symm (hadjU y (hWpos _ y hy)))
   -- piece 4: `U_i → W'` through `i, j`, in proportion to the residuals on `U_i`
   obtain ⟨π4, hP4, hC4⟩ := exists_piece_coupling (d := d) (M := a4) (D := 3)
@@ -738,16 +738,14 @@ lemma exists_jl_coupling_le (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G
       - (if x ∈ M.image Prod.fst then vj else 0)))
     (ν := fun y => if y ∈ uniq G j i \ M.image Prod.snd then a4 / D * vj else 0)
     (fun x => by
-      (try dsimp only)
       refine mul_nonneg (div_nonneg ha40 hR0) ?_
       by_cases hx : x ∈ M.image Prod.fst
-      · rw [if_pos (hMU hx), if_pos hx]; linarith only [hvle]
-      · rw [if_neg hx, sub_zero]; split_ifs
+      · rw [ite_eq_left (hMU hx), ite_eq_left hx]; linarith only [hvle]
+      · rw [ite_eq_right hx, sub_zero]; split_ifs
         · exact hvi0.le
         · exact le_rfl)
     (hWnn _ ha40)
     (by
-      beta_reduce
       rw [← Finset.mul_sum, Finset.sum_sub_distrib, Finset.sum_ite_mem, Finset.sum_ite_mem,
         Finset.univ_inter, Finset.univ_inter, Finset.sum_const, Finset.sum_const, nsmul_eq_mul,
         nsmul_eq_mul, hcMU, ← hR]
@@ -757,7 +755,7 @@ lemma exists_jl_coupling_le (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G
       have hxU : x ∈ uniq G i j := by
         by_contra h
         have h' : x ∉ M.image Prod.fst := fun h'' => h (hMU h'')
-        (try dsimp only at hx); rw [if_neg h, if_neg h', sub_zero, mul_zero] at hx
+        rw [ite_eq_right h, ite_eq_right h', sub_zero, mul_zero] at hx
         exact lt_irrefl _ hx
       exact hd.le_three (mem_uniq.1 hxU).2.1.symm hij (hadjU y (hWpos _ y hy)))
   -- piece 5: everything left, into `i`
@@ -776,22 +774,22 @@ lemma exists_jl_coupling_le (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G
       have h1 : j ∉ common G i j := by simp [mem_common, SimpleGraph.irrefl]
       have h2 : j ∉ uniq G i j := by simp [mem_uniq]
       have h3 : j ∉ M.image Prod.fst := fun h => h2 (hMU h)
-      simp only [if_pos hij, if_neg h1, if_neg h2, if_neg h3, ite_true]; ring
+      simp only [ite_eq_left hij, ite_eq_right h1, ite_eq_right h2, ite_eq_right h3, ite_true]; ring
     · by_cases hC : k ∈ common G i j
       · have h2 : k ∉ uniq G i j := fun h => (mem_uniq.1 h).2.2 (mem_common.1 hC).2
         have h3 : k ∉ M.image Prod.fst := fun h => h2 (hMU h)
-        rw [if_pos (mem_common.1 hC).1, if_pos hC, if_neg h3, if_neg hkj, if_pos hC, if_neg h2,
-          if_neg hkj, if_pos hC, if_neg h2]; ring
+        rw [ite_eq_left (mem_common.1 hC).1, ite_eq_left hC, ite_eq_right h3, ite_eq_right hkj, ite_eq_left hC, ite_eq_right h2,
+          ite_eq_right hkj, ite_eq_left hC, ite_eq_right h2]; ring
       · by_cases hU : k ∈ uniq G i j
-        · rw [if_pos (mem_uniq.1 hU).2.1, if_neg hC, if_neg hkj, if_neg hC, if_pos hU,
-            if_neg hkj, if_neg hC, if_pos hU]; ring
+        · rw [ite_eq_left (mem_uniq.1 hU).2.1, ite_eq_right hC, ite_eq_right hkj, ite_eq_right hC, ite_eq_left hU,
+            ite_eq_right hkj, ite_eq_right hC, ite_eq_left hU]; ring
         · have hna : ¬ G.Adj i k := fun ha => by
             by_cases hb : G.Adj j k
             · exact hC (mem_common.2 ⟨ha, hb⟩)
             · exact hU (mem_uniq.2 ⟨hkj, ha, hb⟩)
           have h3 : k ∉ M.image Prod.fst := fun h => hU (hMU h)
-          rw [if_neg hna, if_neg hC, if_neg h3, if_neg hkj, if_neg hC, if_neg hU, if_neg hkj,
-            if_neg hC, if_neg hU]; ring
+          rw [ite_eq_right hna, ite_eq_right hC, ite_eq_right h3, ite_eq_right hkj, ite_eq_right hC, ite_eq_right hU, ite_eq_right hkj,
+            ite_eq_right hC, ite_eq_right hU]; ring
   have hfrac : ∀ {x y : ℝ}, 0 ≤ x → x ≤ y → (y = 0 → x = 0) → x / y ≤ 1 := by
     intro x y hx hxy hz
     by_cases hy : y = 0
@@ -806,7 +804,6 @@ lemma exists_jl_coupling_le (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G
             - a4 / R * (vi - (if k ∈ M.image Prod.fst then vj else 0)) else 0))
     (ν := fun y => if y = i then vj else 0)
     (fun k => by
-      (try dsimp only)
       have e1 : 0 ≤ (if k = j then vi - a2 else 0) := by
         split_ifs
         · linarith only [ha2le]
@@ -819,14 +816,14 @@ lemma exists_jl_coupling_le (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G
           - a4 / R * (vi - (if k ∈ M.image Prod.fst then vj else 0)) else 0) := by
         have hres : 0 ≤ vi - (if k ∈ M.image Prod.fst then vj else 0) := by
           by_cases hk : k ∈ M.image Prod.fst
-          · rw [if_pos hk]; linarith only [hvle]
-          · rw [if_neg hk]; linarith only [hvi0]
+          · rw [ite_eq_left hk]; linarith only [hvle]
+          · rw [ite_eq_right hk]; linarith only [hvi0]
         by_cases h1 : k ∈ uniq G i j
-        · rw [if_pos h1]
+        · rw [ite_eq_left h1]
           linarith only [mul_le_mul_of_nonneg_right hfr4 hres]
-        · simp only [if_neg h1, le_refl]
+        · simp only [ite_eq_right h1, le_refl]
       linarith only [e1, e2, e3])
-    (fun y => by (try dsimp only); split_ifs <;> first | exact hvj0.le | exact le_rfl)
+    (fun y => by split_ifs <;> first | exact hvj0.le | exact le_rfl)
     (by
       -- total leftover mass equals `v_j`
       have htot : ∑ k, (mp G 0 i k - (if k ∈ common G i j then vj else 0)
@@ -847,44 +844,42 @@ lemma exists_jl_coupling_le (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G
       exact (Finset.sum_congr rfl fun k _ => (hrest k).symm).trans htot)
     (by simp [Finset.sum_ite_eq']) zero_le_one
     (fun x y hx hy => by
-      have hyi : y = i := by by_contra h; (try dsimp only at hy); rw [if_neg h] at hy; exact lt_irrefl _ hy
+      have hyi : y = i := by by_contra h; rw [ite_eq_right h] at hy; exact lt_irrefl _ hy
       rw [hyi]
       have hxa : G.Adj i x := by
         by_contra hna
         have hxj : x ≠ j := fun h => hna (by rw [h]; exact hij)
         have hxC : x ∉ common G i j := fun h => hna (mem_common.1 h).1
         have hxU : x ∉ uniq G i j := fun h => hna (mem_uniq.1 h).2.1
-        (try dsimp only at hx); rw [if_neg hxj, if_neg hxC, if_neg hxU] at hx
+        rw [ite_eq_right hxj, ite_eq_right hxC, ite_eq_right hxU] at hx
         linarith only [hx]
       exact (hd.adj hxa.symm).le)
   -- glue the six pieces
   have hall := hP0.add (hP1.add (hP2.add (hP3.add (hP4.add hP5))))
   refine ⟨_, hall.congr (fun x => ?_) (fun y => ?_), ?_⟩
-  · beta_reduce
-    have := hrest x
+  · have := hrest x
     linarith only [this]
-  · beta_reduce
-    rw [hν, ← hvj]
+  · rw [hν, ← hvj]
     by_cases hyi : y = i
     · rw [hyi]
       have h1 : i ∉ common G i j := by simp [mem_common, SimpleGraph.irrefl]
       have h2 : i ∉ uniq G j i := by simp [mem_uniq]
       have h3 : i ∉ M.image Prod.snd := fun h => h2 (hMW h)
       have h4 : i ∉ uniq G j i \ M.image Prod.snd := fun h => h2 (Finset.mem_sdiff.1 h).1
-      simp only [if_pos hij.symm, if_neg h1, if_neg h3, if_neg h4, ite_true]; ring
+      simp only [ite_eq_left hij.symm, ite_eq_right h1, ite_eq_right h3, ite_eq_right h4, ite_true]; ring
     · by_cases hC : y ∈ common G i j
       · have h2 : y ∉ uniq G j i := fun h => (mem_uniq.1 h).2.2 (mem_common.1 hC).1
         have h3 : y ∉ M.image Prod.snd := fun h => h2 (hMW h)
         have h4 : y ∉ uniq G j i \ M.image Prod.snd := fun h => h2 (Finset.mem_sdiff.1 h).1
-        simp only [if_pos (mem_common.1 hC).2, if_pos hC, if_neg h3, if_neg h4, if_neg hyi]; ring
+        simp only [ite_eq_left (mem_common.1 hC).2, ite_eq_left hC, ite_eq_right h3, ite_eq_right h4, ite_eq_right hyi]; ring
       · by_cases hMy : y ∈ M.image Prod.snd
         · have h4 : y ∉ uniq G j i \ M.image Prod.snd := fun h => (Finset.mem_sdiff.1 h).2 hMy
-          simp only [if_pos (mem_uniq.1 (hMW hMy)).2.1, if_neg hC, if_pos hMy, if_neg h4,
-            if_neg hyi]; ring
+          simp only [ite_eq_left (mem_uniq.1 (hMW hMy)).2.1, ite_eq_right hC, ite_eq_left hMy, ite_eq_right h4,
+            ite_eq_right hyi]; ring
         · by_cases hW : y ∈ uniq G j i \ M.image Prod.snd
           · have hDpos : 0 < D := by
               rw [hD]; exact mul_pos (by exact_mod_cast Finset.card_pos.2 ⟨y, hW⟩) hvj0
-            simp only [if_pos (hadjU y hW), if_neg hC, if_neg hMy, if_pos hW, if_neg hyi]
+            simp only [ite_eq_left (hadjU y hW), ite_eq_right hC, ite_eq_right hMy, ite_eq_left hW, ite_eq_right hyi]
             have key : a2 / D * vj + (a3 / D * vj + (a4 / D * vj + 0)) = (a2 + a3 + a4) / D * vj := by
               ring
             rw [zero_add, zero_add, key, hsum234, div_self hDpos.ne', one_mul]
@@ -892,7 +887,7 @@ lemma exists_jl_coupling_le (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G
               by_cases hb : G.Adj i y
               · exact hC (mem_common.2 ⟨hb, ha⟩)
               · exact hW (Finset.mem_sdiff.2 ⟨mem_uniq.2 ⟨hyi, ha, hb⟩, hMy⟩)
-            simp only [if_neg hna, if_neg hC, if_neg hMy, if_neg hW, if_neg hyi]; ring
+            simp only [ite_eq_right hna, ite_eq_right hC, ite_eq_right hMy, ite_eq_right hW, ite_eq_right hyi]; ring
   · rw [cost_add, cost_diag hd.self, cost_add, cost_add, cost_add, cost_add]
     have hcard : (M.card : ℝ) * vj + D + vj = 1 - tri G i j * vj := by
       rw [hD']; ring
@@ -954,7 +949,7 @@ theorem bf_is_third_piece {i j : V} (hij : G.Adj i j) (h2 : ¬ ρmin G i j ≤ 1
   have hρi := ρ_pos hij
   have hρj := ρ_pos hij.symm
   unfold cBF jlZmax jlZmin jlK bfS bfT
-  rw [if_neg h2]
+  rw [ite_eq_right h2]
   have e : (tri G i j : ℝ) / ρmax G i j + tri G i j / ρmax G i j + tri G i j / ρmin G i j
       = (2 / ρmax G i j + 1 / ρmin G i j) * tri G i j := by ring
   have e' : 2 / ρ G i + 2 / ρ G j = 2 * (1 / ρ G i + 1 / ρ G j) := by ring
@@ -973,17 +968,17 @@ lemma mLazy_mix (hij : G.Adj i j) (_hle : ρ G j ≤ ρ G i) (k : V) :
       + (w G j - w G i) / (1 - w G i) * dirac j k := by
   have h1w : 1 - w G i ≠ 0 := by linarith [w_lt_one (G := G) hij]
   have hθ : (1 - (w G j - w G i) / (1 - w G i)) * (1 - w G i) = 1 - w G j := by
-    field_simp <;> ring
+    field_simp; ring
   rw [mLazy_apply hij.symm]
   unfold mp dirac
   by_cases hk : k = j
-  · rw [if_pos (Or.inl hk), if_pos hk, if_pos hk]
-    field_simp <;> ring
-  · rw [if_neg hk, if_neg hk]
+  · rw [ite_eq_left (Or.inl hk), ite_eq_left hk, ite_eq_left hk]
+    field_simp; ring
+  · rw [ite_eq_right hk, ite_eq_right hk]
     by_cases ha : G.Adj j k
-    · rw [if_pos (Or.inr ha), if_pos ha, mul_zero, add_zero, mul_div_assoc', hθ]
+    · rw [ite_eq_left (Or.inr ha), ite_eq_left ha, mul_zero, add_zero, mul_div_assoc', hθ]
       exact (lazy_nbr_weight hij.symm).symm
-    · rw [if_neg (not_or.2 ⟨hk, ha⟩), if_neg ha, mul_zero, mul_zero, add_zero]
+    · rw [ite_eq_right (not_or.2 ⟨hk, ha⟩), ite_eq_right ha, mul_zero, mul_zero, add_zero]
 
 /-- `W₁(m_i^p, δ_j) ≤ p + (1 − p)(2 − q)` with `q = (2 + △)/ρ_i`, via the product coupling
 with `δ_j` and the split `N(i) = {j} ⊔ C ⊔ U_i`. -/
@@ -1025,19 +1020,19 @@ lemma W1_to_dirac_le (hd : GraphMetric G d) (hij : G.Adj i j) (p : ℝ) (hp0 : 0
       ≤ 0 + tri G i j + 2 * (ρ G i - 1 - tri G i j) := by rw [hC]; linarith [hU, hcard]
   have key : (1 - p) / ρ G i * (0 + tri G i j + 2 * (ρ G i - 1 - tri G i j))
       = (1 - p) * (2 - (2 + tri G i j) / ρ G i) := by
-    field_simp <;> ring
+    field_simp; ring
   linarith [mul_le_mul_of_nonneg_left hS hc0]
 
 /-- `𝔠_LLY ≤ q = (2 + △)/ρ_max`: by Bourne et al. at `p₀ = w_i` and the overlap bound,
 since `Σ min(m_i^{p₀}, m_j^{p₀}) ≤ (2 + △) p₀`. -/
-lemma cLLY_le_q (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.Adj i j)
+lemma cLLY_le_q (hd : GraphMetric G d) (hB : BourneFact G d) (hij : G.Adj i j)
     (hle : ρ G j ≤ ρ G i) : cLLY G d i j ≤ (2 + tri G i j) / ρ G i := by
   classical
   have hρi := ρ_pos hij
   have hρj := ρ_pos hij.symm
   have hwi := w_pos (G := G) i
   have hwi1 : w G i < 1 := w_lt_one hij
-  have hb := cited.bourne i j hij
+  have hb := hB i j hij
   have hρmax : ρmax G i j = ρ G i := max_eq_left hle
   rw [hρmax] at hb
   have hp : (1 : ℝ) / (ρ G i + 1) = w G i := rfl
@@ -1057,7 +1052,7 @@ lemma cLLY_le_q (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.Adj i j
         · exact Or.inl h
         · exact Or.inr (by rw [h]; exact hij)
         · exact Or.inr h.1
-      rw [if_pos hk']
+      rw [ite_eq_left hk']
     · by_cases ha : G.Adj i k
       · have hj : ¬ G.Adj j k := fun hb' => hk ((hmem k).2 (Or.inr (Or.inr ⟨ha, hb'⟩)))
         have hkj : k ≠ j := fun h => hk ((hmem k).2 (Or.inr (Or.inl h)))
@@ -1065,7 +1060,7 @@ lemma cLLY_le_q (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.Adj i j
         simp [mp, hkj, hj]
       · have hki : k ≠ i := fun h => hk ((hmem k).2 (Or.inl h))
         refine (min_le_left _ _).trans (le_of_eq ?_)
-        rw [hmi, mLazy_apply hij, if_neg (not_or.2 ⟨hki, ha⟩)]
+        rw [hmi, mLazy_apply hij, ite_eq_right (not_or.2 ⟨hki, ha⟩)]
   have hsum : ∑ k, min (mp G (w G i) i k) (mp G (w G i) j k) ≤ (2 + tri G i j) * w G i := by
     calc ∑ k, min (mp G (w G i) i k) (mp G (w G i) j k)
         ≤ ∑ k, (if k ∈ overlap (G := G) i j then w G i else 0) := Finset.sum_le_sum fun k _ => hpt k
@@ -1081,7 +1076,7 @@ lemma cLLY_le_q (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.Adj i j
   -- `(1 − w_i) 𝔠_LLY ≤ (2 + △) w_i`, and `1 − w_i = ρ_i w_i`
   have h1w : 1 - w G i = ρ G i * w G i := by
     have h1 : ρ G i + 1 ≠ 0 := by linarith
-    simp only [w]; field_simp <;> ring
+    simp only [w]; field_simp; ring
   have hineq : ρ G i * w G i * cLLY G d i j ≤ (2 + tri G i j) * w G i := by
     rw [← h1w]; linarith
   rw [le_div_iff₀ hρi]
@@ -1089,7 +1084,7 @@ lemma cLLY_le_q (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.Adj i j
 
 /-- **Proposition `prop:mixing-transfer` (B1).** For `ρ_i ≥ ρ_j`,
 `𝔠_OR ≥ (1 − α_max) 𝔠_LLY − Δ(α)(1 − q)`. -/
-theorem mixing_transfer (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.Adj i j)
+theorem mixing_transfer (hd : GraphMetric G d) (hB : BourneFact G d) (hij : G.Adj i j)
     (hle : ρ G j ≤ ρ G i) :
     lamMix (w G j) (w G j - w G i) ((2 + tri G i j) / ρ G i) (cLLY G d i j) ≤ cOR G d i j := by
   have hρi := ρ_pos hij
@@ -1120,7 +1115,7 @@ theorem mixing_transfer (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G
   rw [eμ, eν] at hmix
   -- Bourne: `W₁(m_i^p, m_j^p) = 1 − (1 − p) 𝔠_LLY`, with `p = 1/(ρ_max + 1)`
   have hρmax : ρmax G i j = ρ G i := max_eq_left hle
-  have hb := cited.bourne i j hij
+  have hb := hB i j hij
   rw [hρmax] at hb
   have hW1p : W1 d (mp G p i) (mp G p j) = 1 - (1 - p) * cLLY G d i j := by
     have : p = 1 / (ρ G i + 1) := rfl
@@ -1146,11 +1141,11 @@ theorem mixing_transfer (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G
 
 /-- The mixing lift dominates the current lift on every valid input
 (last sentence of Proposition `prop:mixing-transfer`). -/
-theorem mixing_dominates (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.Adj i j)
+theorem mixing_dominates (hd : GraphMetric G d) (hB : BourneFact G d) (hij : G.Adj i j)
     (hle : ρ G j ≤ ρ G i) {L : ℝ} (hL : L ≤ cLLY G d i j) :
     lamOld (w G i) (w G j) (w G j - w G i) L ≤
       lamMix (w G j) (w G j - w G i) ((2 + tri G i j) / ρ G i) L := by
-  have hq := cLLY_le_q hd cited hij hle
+  have hq := cLLY_le_q hd hB hij hle
   have hwle : w G i ≤ w G j := w_anti hle
   have hρi := ρ_pos hij
   have hq0 : 0 ≤ (2 + tri G i j) / ρ G i :=
@@ -1164,10 +1159,10 @@ theorem mixing_dominates (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : 
 
 /-- **Corollary `cor:mixing-triangle-free`.** The triangle-free version: the mixing
 transfer with `q` replaced by `2/ρ_max`, which needs no triangle count. -/
-theorem mixing_triangle_free (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.Adj i j)
+theorem mixing_triangle_free (hd : GraphMetric G d) (hB : BourneFact G d) (hij : G.Adj i j)
     (hle : ρ G j ≤ ρ G i) {L : ℝ} (hL : L ≤ cLLY G d i j) :
     lamMix (w G j) (w G j - w G i) (2 / ρ G i) L ≤ cOR G d i j := by
-  refine le_trans ?_ (mixing_transfer hd cited hij hle)
+  refine le_trans ?_ (mixing_transfer hd hB hij hle)
   have hρi := ρ_pos hij
   have hwle : w G i ≤ w G j := w_anti hle
   have hwj1 : w G j ≤ 1 := by

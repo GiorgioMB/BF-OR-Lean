@@ -1,7 +1,11 @@
 /-
   Measures and curvatures.
 -/
-import OllivierBF.Graph
+module
+
+public import OllivierBF.Graph
+
+@[expose] public section
 
 open Finset
 
@@ -76,6 +80,12 @@ structure CitedFacts : Prop where
   /-- Villani (2003), Cor. 1.16: saturating the diagonal never increases the cost. -/
   saturate : ∀ μ ν : V → ℝ, ∀ π, IsCoupling μ ν π →
     ∃ π', IsCoupling μ ν π' ∧ (∀ k, π' k k = min (μ k) (ν k)) ∧ cost d π' ≤ cost d π
+
+/-- Lemma 3.3 of the paper (Bourne et al. 2018, Theorems 1.1 and 5.5) at `p = 1/(ρ_max + 1)`:
+the only published result that the statements of `Paper.lean` take as a hypothesis, and only
+in Proposition 4.1 and Corollary 4.2. It is the field `bourne` of `CitedFacts`. -/
+def BourneFact : Prop := ∀ i j, G.Adj i j →
+  cORp G d (1 / (ρmax G i j + 1)) i j = (1 - 1 / (ρmax G i j + 1)) * cLLY G d i j
 
 variable {G d}
 
