@@ -134,9 +134,8 @@ lemma Llazy_deficit (ha : 0 < a) (hb : 0 < b) (t m : ℝ) :
   have h1 : a + 1 ≠ 0 := by linarith
   have h2 : b + 1 ≠ 0 := by linarith
   unfold Llazy
-  first
-    | (field_simp; ring)
-    | field_simp
+  field_simp
+  ring
 
 /-- **Corollary 5.8**: `φ^ℤ_{a,b} ≥ φ_{a,b}`. -/
 lemma phiInt_ge_phiAff (ha : 1 ≤ a) (hab : a ≤ b) (ζ : ℝ) : phiAff a b ζ ≤ phiInt a b ζ := by
