@@ -16,7 +16,7 @@ The experiments of the paper are in a separate repository, [Curvature-Transfer-C
 Install Lean through [elan](https://github.com/leanprover/elan), then run from the repository root:
 
 ```bash
-lake exe cache get   # download prebuilt Mathlib
+lake exe cache get 
 lake build
 ```
 
@@ -81,8 +81,6 @@ Several building blocks in the other files state longer or weaker forms from an 
 | `BourneFact` | `𝔠_{OR-p} = (1 − p) 𝔠_LLY` at `p = 1/(ρ_max + 1)` | [Bourne, Cushing, Liu, Münch, and Peyerimhoff (2018)](https://arxiv.org/abs/1704.04398), Theorems 1.1 and 5.5 | Proposition 4.1 and Corollary 4.2 |
 
 A theorem that needs it takes `hB : BourneFact G d` as an argument, so its statement is an implication from the cited result. Lean checks the implication; the agreement with the published source is checked by hand.
-
-The superseded theorems listed above take instead `cited : CitedFacts G d`, which bundles `BourneFact` (field `bourne`) with three results that the current proofs no longer need: Topping et al. (2022), Theorem 2 (`topping`, `𝔠_BF ≤ 𝔠_LLY`) and Lemma 11 (`topping11`, now the theorem `C4_le_two_matchStat`), and Villani (2003), Corollary 1.16 (`saturate`, replaced by the potentials of `Cover.lean`).
 
 ## Modelling choices
 
