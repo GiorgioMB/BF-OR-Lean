@@ -54,23 +54,29 @@ Numbering follows the current version of the manuscript (its Appendix E has the 
 | Proposition 4.1 (idleness transfer by mixing) | `mixing_transfer_paper`, `cLLY_le_q_paper` | `Paper` | `BourneFact` |
 | Corollary 4.2 (triangle-free version) | `mixing_tf_paper`; `lamTF_closed` for the closed form | `Paper` | `BourneFact` (`mixing_tf_paper` only) |
 | Theorem 4.3 (quadrangle-augmented Jost–Liu bound) | `jl_aug` | `Bounds` | none |
+| Theorem 4.3, exactness for `ρ_i = ρ_j` and a perfect cross matching | `jl_aug_exact_of_perfect`; `cOR0_le_tri_div` for the upper bound `△/ρ_max` of Jost and Liu | `Exactness` | none |
 | Remark 4.4 and Appendix A (comparison with Bhattacharya–Mukherjee) | `LBM_le_Lsq`, `LBM_eq_Lsq_iff` | `Appendix` | none |
 | Remark 4.5 (identity for the matching term) | `pos_part_sub_pos_part` | `Algebra` | none |
 | Lemma 4.6 (one-sided residuals) | `lazy_min`, `lazy_resid_i`, `lazy_resid_j` | `Curvature` | none |
 | Theorem 4.7 (lazy quadrangle bound) | `lazy_quadrangle`; `Llazy_deficit` for the deficit form | `Bounds`, `Paper` | none |
+| Theorem 4.7, exactness for `ρ_i = ρ_j` and a perfect cross matching | `lazy_quadrangle_exact_of_perfect` | `Exactness` | none |
 | Proposition 4.8 (lazy transport envelope) | `lazy_envelope_paper`; `lazy_envelope_cover` for every vertex cover; `mUU_le` for the bounds on `m^UU` | `Paper`, `Cover` | none |
 | Proposition 5.1 (i) (BF as an unclipped Jost–Liu bound) | `bf_is_third_piece` | `Bounds` | none |
+| Proposition 5.1 (ii) and (iii) (excess bound and ordered deficits) | `LBF_eq`, `LBF_le_Lsq`, `bf_excess`; `bfB_le_bfA`, `bf_le_cOR0_of_bfB_nonneg` | `Unclipped` | none |
 | Remark 5.3 (the identities and inequalities it rests on) | `Llazy_sub_lamMix`, `lamMix_piece3_le`, `lamOld_piece3_le`, `lamTF_piece3_le` | `Algebra` | none |
 | Theorem 5.4 (lower modulus) | `bf_lower_paper`; `phiAff_mono`; `phiAff_virtual` for the virtual edge | `Paper` | none |
+| Theorem 5.4 (continuity, convexity, and piecewise linearity of `φ`) | `phiAff_continuous`, `phiAff_convexOn`, `phiAff_of_le`, `phiAff_of_ge` | `Modulus` | none |
 | Proposition 5.5 (range of BF and comparison with the lifts) | `cBF_le_range`; `phiAff_ge_lamTF` | `Paper` | none |
 | Lemma 5.6 (budget region) | `budget_region` | `Paper` | none |
 | Theorem 5.7 (upper modulus) | `bf_upper_paper`; `psiInt_mono`; `psiTwo_deficit` for the deficit form | `Paper` | none |
 | Corollary 5.8 (BF interval) | `bf_interval_paper`; `phiInt_ge_phiAff`; `phiInt_le_Llazy` | `Paper` | none |
 | Proposition 5.9 (2-hop interval) | `two_hop_interval_paper` | `Paper` | none |
+| Proposition B.1 (envelope for arbitrary idleness) | `envelope_arbitrary_idleness`; `Ulazy_le_Uenv` for the comparison with `U^lazy` | `ArbitraryIdleness` | none |
 | Corollary C.1 (lower bound on BF) | `or_to_bf_lower_paper`; `coverage_bound`, `coverage_bound_eq` for (C.1) | `Paper` | none |
 | Corollary C.2 (upper bound on BF) | `or_to_bf_upper_paper` | `Paper` | none |
+| Algorithm 1 (certify-then-solve is exact) | `certifyThenSolve_eq`; `certifyThenSolve_paper` with the 2-hop interval | `Screening` | none |
 
-The lower ends come from explicit couplings (`W1_le_cost`) and the upper ends of Proposition 4.8 from explicit 1-Lipschitz potentials (`cost_ge_potential`, `coverPot`): for every vertex cover `K` of the cross-edge graph, `lazy_envelope_cover` bounds `𝔠_OR` by the potential that is `2` on `{i} ∪ (U_i \ K)`, `0` on `U_j \ K`, and `1` elsewhere. The covers `ξ_j` and a König cover with `𝔪(i, j)` vertices give `m^UU = min{𝔪 w_i, |ξ_j| w_j}`.
+The lower ends come from explicit couplings (`W1_le_cost`) and the upper ends of Proposition 4.8 from explicit 1-Lipschitz potentials (`cost_ge_potential`, `coverPot`): for every vertex cover `K` of the cross-edge graph, `lazy_envelope_cover` bounds `𝔠_OR` by the potential that is `2` on `{i} ∪ (U_i \ K)`, `0` on `U_j \ K`, and `1` elsewhere. The covers `ξ_j` and a König cover with `𝔪(i, j)` vertices give `m^UU = min{𝔪 w_i, |ξ_j| w_j}`. Proposition B.1 is proved the same way, with two pairs of potentials (`cost_ge_two_potentials`), so unlike the proof in the paper it does not need a coupling that saturates the diagonal.
 
 Several building blocks in the other files state longer or weaker forms from an earlier version of the paper, and `Paper.lean` derives the current statements from them. `phiElem` has a second slope on thresholds that no edge attains, `psiHat` and `Theta` keep terms that are never active, and `psiUp` maximizes over the whole interval of triangle counts rather than over integers. The theorems stated through them (`bf_lower`, `bf_upper`, `bf_interval`, `sharpened_interval`, `lazy_envelope`, `coverage_envelope`, `or_to_bf_lower_env`, `or_to_bf_lower`, `or_to_bf_old`, and `or_to_bf_mixing`) are superseded by those of `Paper.lean`, and only they use the structure `CitedFacts` below.
 
@@ -92,13 +98,11 @@ A theorem that needs it takes `hB : BourneFact G d` as an argument, so its state
 
 ## Not formalized
 
-- The exactness statements of Theorems 4.3, 4.7, and 5.4 and Corollary 5.8.
-- Regularity and computation: the continuity, convexity, and piecewise linearity of the lower modulus, the location of the maximizers of `Ψ̂` in Theorem 5.7, and the `O(1)` evaluation in Corollary 5.8.
-- Proposition B.1 (the envelope for arbitrary idleness, Appendix B) and the comparison of `U^lazy` with `U^env`.
-- Parts (ii) and (iii) of Proposition 5.1.
+- The exactness statements on edges that lie on no cycle of length at most 5 (Theorems 4.3 and 4.7), which need `d ≥ 3` between the two unique neighbourhoods, and those of Theorem 5.4 and Corollary 5.8.
+- Computation: the location of the maximizers of `Ψ̂` in Theorem 5.7 and the `O(1)` evaluation in Corollary 5.8.
 - The closed form of the Bhattacharya–Mukherjee matching number in Remark 4.4. `LBM` is defined through it rather than from their definition.
 - The comparison that follows Corollary C.2.
-- The correctness of Algorithm 1 (certify-then-solve).
+- The TLW certificate of the second stage of Algorithm 1, which `certifyThenSolve_paper` takes as an arbitrary valid upper bound.
 
 ## Layout
 
@@ -113,6 +117,11 @@ A theorem that needs it takes `hB : BourneFact G d` as an argument, so its state
 | `OllivierBF/Appendix.lean` | Appendix A, and building blocks for Appendix C |
 | `OllivierBF/Cover.lean` | König's theorem for the cross-edge graph (from Hall's theorem), Lemma 3.6, weak duality, and the vertex-cover potentials of Proposition 4.8 |
 | `OllivierBF/Paper.lean` | Propositions 4.1, 4.8, 5.5, and 5.9, Corollaries 4.2 and 5.8, Theorems 5.4 and 5.7, Lemma 5.6, and Appendix C in the form of the paper |
+| `OllivierBF/Unclipped.lean` | Proposition 5.1 (ii) and (iii) |
+| `OllivierBF/Exactness.lean` | Exactness of Theorems 4.3 and 4.7 for perfect cross matchings, and the upper bound `△/ρ_max` |
+| `OllivierBF/Modulus.lean` | Continuity, convexity, and piecewise linearity of the lower modulus |
+| `OllivierBF/ArbitraryIdleness.lean` | Proposition B.1 and the comparison of `U^lazy` with `U^env` |
+| `OllivierBF/Screening.lean` | The correctness of Algorithm 1 |
 | `OllivierBF.lean` | Imports all of the above |
 
 ## Citing
