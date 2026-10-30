@@ -10,3 +10,4 @@ public import OllivierBF.Appendix
 public import OllivierBF.Cover
 public import OllivierBF.Paper
 public import OllivierBF.Unclipped
+public import OllivierBF.Exactness
