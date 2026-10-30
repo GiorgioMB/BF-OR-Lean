@@ -54,11 +54,11 @@ Numbering follows the current version of the manuscript (its Appendix E has the 
 | Proposition 4.1 (idleness transfer by mixing) | `mixing_transfer_paper`, `cLLY_le_q_paper` | `Paper` | `BourneFact` |
 | Corollary 4.2 (triangle-free version) | `mixing_tf_paper`; `lamTF_closed` for the closed form | `Paper` | `BourneFact` (`mixing_tf_paper` only) |
 | Theorem 4.3 (quadrangle-augmented Jost–Liu bound) | `jl_aug` | `Bounds` | none |
-| Remark 4.4 and Appendix B (comparison with Bhattacharya–Mukherjee) | `LBM_le_Lsq`, `LBM_eq_Lsq_iff` | `Appendix` | none |
+| Remark 4.4 and Appendix A (comparison with Bhattacharya–Mukherjee) | `LBM_le_Lsq`, `LBM_eq_Lsq_iff` | `Appendix` | none |
 | Remark 4.5 (identity for the matching term) | `pos_part_sub_pos_part` | `Algebra` | none |
 | Lemma 4.6 (one-sided residuals) | `lazy_min`, `lazy_resid_i`, `lazy_resid_j` | `Curvature` | none |
 | Theorem 4.7 (lazy quadrangle bound) | `lazy_quadrangle`; `Llazy_deficit` for the deficit form | `Bounds`, `Paper` | none |
-| Proposition 4.10 (lazy transport envelope) | `lazy_envelope_paper`; `lazy_envelope_cover` for every vertex cover; `mUU_le` for the bounds on `m^UU` | `Paper`, `Cover` | none |
+| Proposition 4.8 (lazy transport envelope) | `lazy_envelope_paper`; `lazy_envelope_cover` for every vertex cover; `mUU_le` for the bounds on `m^UU` | `Paper`, `Cover` | none |
 | Proposition 5.1 (i) (BF as an unclipped Jost–Liu bound) | `bf_is_third_piece` | `Bounds` | none |
 | Remark 5.3 (the identities and inequalities it rests on) | `Llazy_sub_lamMix`, `lamMix_piece3_le`, `lamOld_piece3_le`, `lamTF_piece3_le` | `Algebra` | none |
 | Theorem 5.4 (lower modulus) | `bf_lower_paper`; `phiAff_mono`; `phiAff_virtual` for the virtual edge | `Paper` | none |
@@ -70,7 +70,7 @@ Numbering follows the current version of the manuscript (its Appendix E has the 
 | Corollary C.1 (lower bound on BF) | `or_to_bf_lower_paper`; `coverage_bound`, `coverage_bound_eq` for (C.1) | `Paper` | none |
 | Corollary C.2 (upper bound on BF) | `or_to_bf_upper_paper` | `Paper` | none |
 
-The lower ends come from explicit couplings (`W1_le_cost`) and the upper ends of Proposition 4.10 from explicit 1-Lipschitz potentials (`cost_ge_potential`, `coverPot`): for every vertex cover `K` of the cross-edge graph, `lazy_envelope_cover` bounds `𝔠_OR` by the potential that is `2` on `{i} ∪ (U_i \ K)`, `0` on `U_j \ K`, and `1` elsewhere. The covers `ξ_j` and a König cover with `𝔪(i, j)` vertices give `m^UU = min{𝔪 w_i, |ξ_j| w_j}`.
+The lower ends come from explicit couplings (`W1_le_cost`) and the upper ends of Proposition 4.8 from explicit 1-Lipschitz potentials (`cost_ge_potential`, `coverPot`): for every vertex cover `K` of the cross-edge graph, `lazy_envelope_cover` bounds `𝔠_OR` by the potential that is `2` on `{i} ∪ (U_i \ K)`, `0` on `U_j \ K`, and `1` elsewhere. The covers `ξ_j` and a König cover with `𝔪(i, j)` vertices give `m^UU = min{𝔪 w_i, |ξ_j| w_j}`.
 
 Several building blocks in the other files state longer or weaker forms from an earlier version of the paper, and `Paper.lean` derives the current statements from them. `phiElem` has a second slope on thresholds that no edge attains, `psiHat` and `Theta` keep terms that are never active, and `psiUp` maximizes over the whole interval of triangle counts rather than over integers. The theorems stated through them (`bf_lower`, `bf_upper`, `bf_interval`, `sharpened_interval`, `lazy_envelope`, `coverage_envelope`, `or_to_bf_lower_env`, `or_to_bf_lower`, `or_to_bf_old`, and `or_to_bf_mixing`) are superseded by those of `Paper.lean`, and only they use the structure `CitedFacts` below.
 
@@ -94,7 +94,7 @@ A theorem that needs it takes `hB : BourneFact G d` as an argument, so its state
 
 - The exactness statements of Theorems 4.3, 4.7, and 5.4 and Corollary 5.8.
 - Regularity and computation: the continuity, convexity, and piecewise linearity of the lower modulus, the location of the maximizers of `Ψ̂` in Theorem 5.7, and the `O(1)` evaluation in Corollary 5.8.
-- Proposition 4.8 (the envelope for arbitrary idleness) and the comparison of `U^lazy` with `U^env` in Proposition 4.10.
+- Proposition B.1 (the envelope for arbitrary idleness, Appendix B) and the comparison of `U^lazy` with `U^env`.
 - Parts (ii) and (iii) of Proposition 5.1.
 - The closed form of the Bhattacharya–Mukherjee matching number in Remark 4.4. `LBM` is defined through it rather than from their definition.
 - The comparison that follows Corollary C.2.
@@ -108,11 +108,11 @@ A theorem that needs it takes `hB : BourneFact G d` as an argument, so its state
 | `OllivierBF/Graph.lean` | `GraphMetric`, neighbourhood statistics, cross matchings, and the box-count bound (3.2) |
 | `OllivierBF/Curvature.lean` | Measures, curvatures, `BourneFact`, `CitedFacts`, and Lemma 4.6 |
 | `OllivierBF/Algebra.lean` | Real-number identities behind Theorem 5.4, Proposition 5.5, and Remark 5.3 (no graphs) |
-| `OllivierBF/Bounds.lean` | Theorems 4.3 and 4.7, Proposition 5.1 (i), and building blocks for Propositions 4.1 and 4.10 and Corollary 4.2 |
+| `OllivierBF/Bounds.lean` | Theorems 4.3 and 4.7, Proposition 5.1 (i), and building blocks for Propositions 4.1 and 4.8 and Corollary 4.2 |
 | `OllivierBF/Interval.lean` | Building blocks for Theorems 5.4 and 5.7 (`phiElem`, `psiHat`, `psiUp`, and the cross-edge caps) |
-| `OllivierBF/Appendix.lean` | Appendix B, and building blocks for Appendix C |
-| `OllivierBF/Cover.lean` | König's theorem for the cross-edge graph (from Hall's theorem), Lemma 3.6, weak duality, and the vertex-cover potentials of Proposition 4.10 |
-| `OllivierBF/Paper.lean` | Propositions 4.1, 4.10, 5.5, and 5.9, Corollaries 4.2 and 5.8, Theorems 5.4 and 5.7, Lemma 5.6, and Appendix C in the form of the paper |
+| `OllivierBF/Appendix.lean` | Appendix A, and building blocks for Appendix C |
+| `OllivierBF/Cover.lean` | König's theorem for the cross-edge graph (from Hall's theorem), Lemma 3.6, weak duality, and the vertex-cover potentials of Proposition 4.8 |
+| `OllivierBF/Paper.lean` | Propositions 4.1, 4.8, 5.5, and 5.9, Corollaries 4.2 and 5.8, Theorems 5.4 and 5.7, Lemma 5.6, and Appendix C in the form of the paper |
 | `OllivierBF.lean` | Imports all of the above |
 
 ## Citing

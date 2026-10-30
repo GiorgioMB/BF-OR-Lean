@@ -1,5 +1,5 @@
 /-
-  Appendix B (comparison with Bhattacharya–Mukherjee) and Appendix C (reverse direction:
+  Appendix A (comparison with Bhattacharya–Mukherjee) and Appendix C (reverse direction:
   what an OR value certifies about BF), rebuilt on the bounds of `Bounds.lean`.
 -/
 module
@@ -17,7 +17,7 @@ namespace OllivierBF
 variable {V : Type*} [Fintype V] [DecidableEq V]
 variable {G : SimpleGraph V} [DecidableRel G.Adj] {d : V → V → ℝ} {i j : V}
 
-/-! ### Appendix B -/
+/-! ### Appendix A -/
 
 /-- The bound of Bhattacharya and Mukherjee (2015, Thm 5.1), with their matching number
 between the non-common neighbourhoods written as `min{|U_i| + 1, |U_j| + 1, 𝔪 + 2}`
@@ -31,7 +31,7 @@ section bmCore
 
 variable {a b t m : ℝ}
 
-/-- Algebraic core of Appendix B, with `a = ρ_min`, `b = ρ_max`, `t = △`, `m = 𝔪`, and the
+/-- Algebraic core of Appendix A, with `a = ρ_min`, `b = ρ_max`, `t = △`, `m = 𝔪`, and the
 integrality alternative `m < |U_min|` or `m = |U_min| = a − 1 − t`. -/
 lemma bm_core (ha : 1 ≤ a) (hab : a ≤ b) (ht : 0 ≤ t) (hm : 0 ≤ m)
     (hint : m + 1 ≤ a - 1 - t ∨ m = a - 1 - t) :
@@ -184,12 +184,12 @@ lemma LBM_Lsq_reduce (hij : G.Adj i j) :
     have e1 : 1 - 1 / ρ G i - 1 / ρ G j = 1 - 1 / ρmin G i j - 1 / ρmax G i j := by linarith
     rw [e1]
 
-/-- **Appendix B: `L^□ ≥ L^BM`.** -/
+/-- **Appendix A: `L^□ ≥ L^BM`.** -/
 theorem LBM_le_Lsq (hij : G.Adj i j) : LBM G i j ≤ Lsq (G := G) i j := by
   obtain ⟨a, b, t, m, ha, hab, ht, hm, hint, -, hL, hR⟩ := LBM_Lsq_reduce hij
   rw [hL, hR]; exact bm_core ha hab ht hm hint
 
-/-- **Appendix B: equality holds exactly on edges with equal degrees.** -/
+/-- **Appendix A: equality holds exactly on edges with equal degrees.** -/
 theorem LBM_eq_Lsq_iff (hij : G.Adj i j) : LBM G i j = Lsq (G := G) i j ↔ ρ G i = ρ G j := by
   obtain ⟨a, b, t, m, ha, hab, ht, hm, hint, hiff, hL, hR⟩ := LBM_Lsq_reduce hij
   rw [hL, hR, ← hiff]; exact bm_core_eq_iff ha hab ht hm hint

@@ -246,14 +246,14 @@ theorem mixing_tf_paper (hd : GraphMetric G d) (hB : BourneFact G d) (hij : G.Ad
   nlinarith [mul_le_mul_of_nonneg_left hL (by linarith : (0 : ℝ) ≤ 1 - w G i),
     mul_le_mul_of_nonneg_left hmax (by linarith : (0 : ℝ) ≤ w G i - w G j)]
 
-/-! ### Proposition 4.10 -/
+/-! ### Proposition 4.8 -/
 
 /-- `1/w_i + 1/w_j = ρ_i + ρ_j + 2`. -/
 lemma sig_eq (i j : V) : 1 / w G i + 1 / w G j = ρ G i + ρ G j + 2 := by
   simp only [w, one_div_one_div]
   ring
 
-/-- `U^lazy = −1 + 2m⁰ + (1 + △)Δ_α + m^UU` of Proposition 4.10, with
+/-- `U^lazy = −1 + 2m⁰ + (1 + △)Δ_α + m^UU` of Proposition 4.8, with
 `m^UU = min{𝔪 w_i, |ξ_j| w_j}`. -/
 noncomputable def Ulazy (G : SimpleGraph V) [DecidableRel G.Adj] (i j : V) : ℝ :=
   -1 + 2 * ((2 + tri G i j) * w G j) + (1 + tri G i j) * (w G i - w G j)
@@ -283,7 +283,7 @@ lemma mUU_xi_le (hij : G.Adj i j) :
   rw [sig_eq i j] at hharm
   exact ⟨hm1.trans (mul_le_mul_of_nonneg_right hX hwi.le), hharm⟩
 
-/-- **Proposition 4.10**: the bounds on `m^UU = min{𝔪 w_i, |ξ_j| w_j}`. -/
+/-- **Proposition 4.8**: the bounds on `m^UU = min{𝔪 w_i, |ξ_j| w_j}`. -/
 lemma mUU_le (hij : G.Adj i j) :
     min (matchNum G i j * w G i) ((xi G j i).card * w G j) ≤ (ρ G i - 1 - tri G i j) * w G i ∧
       min (matchNum G i j * w G i) ((xi G j i).card * w G j)
@@ -295,7 +295,7 @@ lemma mUU_le (hij : G.Adj i j) :
   obtain ⟨h1, h2⟩ := mUU_xi_le hij
   exact ⟨hle.trans h1, hle.trans h2⟩
 
-/-- **Proposition 4.10**: `𝔠_OR ≤ U^lazy ≤ (2 + △) w_j − Δ_α`. Proved by the vertex-cover
+/-- **Proposition 4.8**: `𝔠_OR ≤ U^lazy ≤ (2 + △) w_j − Δ_α`. Proved by the vertex-cover
 potentials of `Cover.lean`, with the covers `ξ_j` and a König cover of `𝔪` vertices. -/
 theorem lazy_envelope_paper (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) :
     cOR G d i j ≤ Ulazy G i j ∧ Ulazy G i j ≤ (2 + tri G i j) * w G j - (w G i - w G j) := by
@@ -582,7 +582,7 @@ theorem two_hop_interval_paper (hd : GraphMetric G d) (hij : G.Adj i j) (hle : �
 
 /-! ### Appendix C -/
 
-/-- The coverage bound (Proposition 4.10, last inequality; equation (C.1)):
+/-- The coverage bound (Proposition 4.8, last inequality; equation (C.1)):
 `𝔠_OR ≤ (2 + △) w_j − Δ_α`. -/
 theorem coverage_bound (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) :
     cOR G d i j ≤ (2 + tri G i j) * w G j - (w G i - w G j) :=

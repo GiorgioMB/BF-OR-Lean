@@ -1,6 +1,6 @@
 /-
   König's theorem for the cross-edge graph, the bound `𝔠₄ ≤ 2σ` (Lemma 3.6 of the paper),
-  and the vertex-cover potentials behind the lazy transport envelope (Proposition 4.10).
+  and the vertex-cover potentials behind the lazy transport envelope (Proposition 4.8).
 
   Nothing in this file takes a published result as a hypothesis. König's theorem is derived
   from Hall's marriage theorem in Mathlib by adding dummy vertices, and the envelope is a
@@ -346,7 +346,7 @@ lemma matchNum_le_xi : matchNum G i j ≤ (xi G i j).card := by
   obtain ⟨h1, h2, h3⟩ := hM.1 e he
   exact mem_xi.2 ⟨h1, e.2, h2, h3⟩
 
-/-! ### Weak duality and the vertex-cover potentials (Proposition 4.10) -/
+/-! ### Weak duality and the vertex-cover potentials (Proposition 4.8) -/
 
 /-- **Weak duality**: a potential with `f x − f y ≤ d x y` bounds every coupling from below. -/
 lemma cost_ge_potential {μ ν : V → ℝ} {π : V → V → ℝ} (f : V → ℝ)
@@ -368,7 +368,7 @@ lemma cost_ge_potential {μ ν : V → ℝ} {π : V → V → ℝ} (f : V → �
   rw [e]
   exact mul_le_mul_of_nonneg_right (hf x y) (hπ.1 x y)
 
-/-- The potential `f_K` of Proposition 4.10: `2` on `{i} ∪ (U_i \ K)`, `0` on `U_j \ K`, and `1`
+/-- The potential `f_K` of Proposition 4.8: `2` on `{i} ∪ (U_i \ K)`, `0` on `U_j \ K`, and `1`
 elsewhere. -/
 noncomputable def coverPot (G : SimpleGraph V) [DecidableRel G.Adj] (i j : V) (K : Finset V)
     (x : V) : ℝ :=
@@ -520,7 +520,7 @@ lemma lazy_identity (hij : G.Adj i j) :
   rw [card_uniq_real hij]
   linear_combination hρw
 
-/-- **Proposition 4.10, the cover bound**: for every vertex cover `K` of `B_{ij}`,
+/-- **Proposition 4.8, the cover bound**: for every vertex cover `K` of `B_{ij}`,
 `𝔠_OR ≤ −1 + 2 m⁰ + (1 + △) Δ_α + |K ∩ U_i| w_i + |K ∩ U_j| w_j`, with `m⁰ = (2 + △) w_j`. -/
 theorem lazy_envelope_cover (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j)
     {K : Finset V} (hK : CoversCross G i j K) :
