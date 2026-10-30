@@ -60,7 +60,7 @@ lemma sum_mul_mp (p : ℝ) (u : V) (f : V → ℝ) :
       · simp [mp, h1, h2]
       · simp [mp, h1, h2]
   rw [Finset.sum_congr rfl fun k _ => hsplit k, Finset.sum_add_distrib, Finset.sum_ite_eq',
-    if_pos (Finset.mem_univ u), ← Finset.sum_filter, ← SimpleGraph.neighborFinset_eq_filter,
+    ite_eq_left (Finset.mem_univ u), ← Finset.sum_filter, ← SimpleGraph.neighborFinset_eq_filter,
     ← Finset.sum_mul]
   ring
 
@@ -156,7 +156,7 @@ lemma envPot_lip (hd : GraphMetric G d) {K : Finset V} (hK : CoversCross G i j K
         rintro (h | h)
         · exact hxj h
         · exact hnadj h
-      simp only [envF, envG, if_pos hX, if_neg hY, if_neg hN]
+      simp only [envF, envG, ite_eq_left hX, ite_eq_right hY, ite_eq_right hN]
       norm_num
     · by_cases hY : x ∈ uniq G j i ∧ x ∉ K
       · obtain ⟨hxi, -, hnadj⟩ := mem_uniq.1 hY.1
@@ -164,9 +164,9 @@ lemma envPot_lip (hd : GraphMetric G d) {K : Finset V} (hK : CoversCross G i j K
           rintro (h | h)
           · exact hxi h
           · exact hnadj h
-        simp only [envF, envG, if_neg hX, if_pos hY, if_neg hN]
+        simp only [envF, envG, ite_eq_right hX, ite_eq_left hY, ite_eq_right hN]
         norm_num
-      · simp only [envF, envG, if_neg hX, if_neg hY]
+      · simp only [envF, envG, ite_eq_right hX, ite_eq_right hY]
         split_ifs <;> norm_num
   · have h1 := hd.one_le hxy
     have hf2 : envF G i j K x ≤ 2 := by
@@ -187,12 +187,12 @@ lemma envPot_lip (hd : GraphMetric G d) {K : Finset V} (hK : CoversCross G i j K
         linarith
       · have hg1 : 1 ≤ envG G i j K y := by
           unfold envG
-          rw [if_neg hY]
+          rw [ite_eq_right hY]
           split_ifs <;> norm_num
         linarith
     · have hf1 : envF G i j K x ≤ 1 := by
         unfold envF
-        rw [if_neg hX]
+        rw [ite_eq_right hX]
         split_ifs <;> norm_num
       linarith
 
@@ -267,9 +267,9 @@ lemma envPot2_lip (hd : GraphMetric G d) {c₀ : ℝ} (hc : c₀ = 0 ∨ c₀ = 
   by_cases hxy : x = y
   · rw [← hxy, hd.self]
     by_cases hC : x ∈ common G i j
-    · simp only [envF2, envG2, if_pos hC]
+    · simp only [envF2, envG2, ite_eq_left hC]
       linarith
-    · simp only [envF2, envG2, if_neg hC]
+    · simp only [envF2, envG2, ite_eq_right hC]
       split_ifs <;> norm_num
   · have h1 := hd.one_le hxy
     -- `f − g ≤ 1` everywhere

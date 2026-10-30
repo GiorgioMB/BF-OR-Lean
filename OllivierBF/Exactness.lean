@@ -45,17 +45,17 @@ theorem cOR0_le_tri_div (hd : GraphMetric G d) (hij : G.Adj i j) :
     by_cases hi : G.Adj i x
     · by_cases hj : G.Adj j x
       · have hx : x ∈ common G i j := mem_common.2 ⟨hi, hj⟩
-        rw [if_pos hi, if_pos hj, if_pos hx]
+        rw [ite_eq_left hi, ite_eq_left hj, ite_eq_left hx]
         exact hcmin
       · have hx : x ∉ common G i j := fun h => hj (mem_common.1 h).2
-        rw [if_pos hi, if_neg hj, if_neg hx]
+        rw [ite_eq_left hi, ite_eq_right hj, ite_eq_right hx]
         exact min_eq_right (one_div_nonneg.2 hρi.le)
     · have hx : x ∉ common G i j := fun h => hi (mem_common.1 h).1
-      rw [if_neg hi, if_neg hx]
+      rw [ite_eq_right hi, ite_eq_right hx]
       by_cases hj : G.Adj j x
-      · rw [if_pos hj]
+      · rw [ite_eq_left hj]
         exact min_eq_left (one_div_nonneg.2 hρj.le)
-      · rw [if_neg hj]
+      · rw [ite_eq_right hj]
         exact min_self 0
   have hsum : ∑ x, min (mp G 0 i x) (mp G 0 j x) = tri G i j / ρmax G i j := by
     rw [Finset.sum_congr rfl (fun x _ => hmin x), Finset.sum_ite_mem, Finset.univ_inter,
