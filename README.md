@@ -1,13 +1,13 @@
 # BF-OR-Lean
 A Lean 4 formalization of the main results of
 
-> Giorgio Micaletto and Tebe Nigrelli. *What Balanced Forman Curvature Certifies About Ollivier–Ricci Curvature.* 2026.
+> Giorgio Micaletto and Tebe Nigrelli. *From Proxy to Certificate: Two-Sided Ollivier--Ricci Bounds from Balanced Forman Curvature.* 2026.
 
-For every edge of a finite simple graph, the paper shows that the Balanced Forman (BF) curvature of the edge and the degrees of its two endpoints certify a two-sided interval for its lazy Ollivier–Ricci (OR) curvature, without solving an optimal transport problem. This repository proves that interval in Lean, together with the transport bounds it is built from, its sharpened form, the comparison with the bound of Bhattacharya and Mukherjee, and the reverse direction (what an OR value certifies about BF).
+For every edge of a finite simple graph, the paper shows that the Balanced Forman (BF) curvature of the edge and the degrees of its two endpoints certify a two-sided interval for its lazy Ollivier–Ricci (OR) curvature, without solving an optimal transport problem. This repository proves that interval in Lean, together with the transport bounds it is built from, its sharpened form, the comparison with the bound of [Bhattacharya and Mukherjee](https://arxiv.org/abs/1306.6741), and the reverse direction (what an OR value certifies about BF).
 
 - **Builds** with Lean `v4.36.0-rc1` and Mathlib commit [`cf5dd31`](https://github.com/leanprover-community/mathlib4/commit/cf5dd317652efe9d9d17252014a4cd442bf86469), both pinned in this repository.
 - **Contains no `sorry`** and **declares no axioms**. Every file uses the Lean module system (`module`, `public import`, `@[expose] public section`).
-- **One published result**, Lemma 3.3 of the paper (Bourne et al.), is not re-proved. It enters as the explicit hypothesis `BourneFact` of Proposition 4.1 and Corollary 4.2 only ([below](#cited-results)). Every other statement of `OllivierBF/Paper.lean`, including the BF interval and the 2-hop interval, is proved from the definitions; König's theorem for the cross-edge graph is derived from Hall's theorem in Mathlib (`OllivierBF/Cover.lean`).
+- **One published result**, Lemma 3.3 of the paper ([Bourne et al.](https://arxiv.org/abs/1704.04398)), is not re-proved. It enters as the explicit hypothesis `BourneFact` of Proposition 4.1 and Corollary 4.2 only ([below](#cited-results)). Every other statement is proved from the definitions; König's theorem for the cross-edge graph is derived from Hall's theorem in Mathlib (`OllivierBF/Cover.lean`).
 
 The experiments of the paper are in a separate repository, [Curvature-Transfer-Code](https://github.com/GiorgioMB/Curvature-Transfer-Code).
 
@@ -20,7 +20,7 @@ lake exe cache get
 lake build
 ```
 
-`lean-toolchain` pins the Lean version and `lake-manifest.json` pins Mathlib, so `lake build` checks exactly the code described here. Running `lake update` moves to a newer Mathlib, which may need small fixes.
+`lean-toolchain` pins the Lean version and `lake-manifest.json` pins Mathlib, so `lake build` checks the code described here. Running `lake update` moves to a newer Mathlib, which may need small fixes.
 
 To see what a theorem rests on, add to any file that imports `OllivierBF`:
 
@@ -29,7 +29,7 @@ To see what a theorem rests on, add to any file that imports `OllivierBF`:
 #print axioms OllivierBF.two_hop_interval_paper
 ```
 
-The output should list only Lean's standard axioms (`propext`, `Classical.choice`, `Quot.sound`). The cited results do not appear there because they are hypotheses, not axioms.
+The output should list only Lean's standard axioms (`propext`, `Classical.choice`, `Quot.sound`). The cited result does not appear there as it is 0 hypotheses, not axioms.
 
 ## The main theorem
 
@@ -122,7 +122,11 @@ If you use this formalization, please cite the paper:
 ```bibtex
 @misc{micaletto_nigrelli_2026,
   author = {Micaletto, Giorgio and Nigrelli, Tebe},
-  title  = {What Balanced {Forman} Curvature Certifies About {Ollivier--Ricci} Curvature},
-  year   = {2026}
+  title  = {From Proxy to Certificate: Two-Sided {Ollivier--Ricci} Bounds from Balanced {Forman} Curvature.},
+  year   = {2026},
+  eprint={2603.13535},
+  archivePrefix={arXiv},
+  primaryClass={stat.CO},
+  url={https://arxiv.org/abs/2603.13535}, 
 }
 ```
