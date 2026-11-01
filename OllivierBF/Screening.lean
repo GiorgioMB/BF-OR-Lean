@@ -53,19 +53,19 @@ theorem certifyThenSolve_eq (E : Finset ι) (lo up upPrior κ : ι → ℝ) (ϑ 
   unfold stage3 stage2
   by_cases hA : lo e < ϑ ∧ ϑ ≤ up e
   · -- undecided after the first stage
-    rw [if_pos hA]
+    rw [ite_eq_left hA]
     by_cases hB : lo e < ϑ ∧ ϑ ≤ min (up e) (upPrior e)
     · -- still undecided: the exact value decides
-      rw [if_pos hB]
+      rw [ite_eq_left hB]
     · -- decided by the second certificate: `κ ≤ min (up, upPrior) < ϑ`
-      rw [if_neg hB]
+      rw [ite_eq_right hB]
       have hmin : min (up e) (upPrior e) < ϑ := by
         by_contra hc
         exact hB ⟨hA.1, not_lt.mp hc⟩
       have hk : κ e ≤ min (up e) (upPrior e) := le_min h2 h3
       exact ⟨fun _ => lt_of_le_of_lt hk hmin, fun _ => hmin⟩
   · -- decided by the interval: `up < ϑ` puts the edge in, `ϑ ≤ lo` keeps it out
-    rw [if_neg hA, if_neg hA]
+    rw [ite_eq_right hA, ite_eq_right hA]
     constructor
     · intro hu
       exact lt_of_le_of_lt h2 hu

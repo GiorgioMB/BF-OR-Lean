@@ -16,11 +16,7 @@ namespace OllivierBF
 /-- **Theorem 5.4**: the lower modulus is continuous. -/
 theorem phiAff_continuous (a b : ℝ) : Continuous (phiAff a b) := by
   show Continuous fun ζ => L0 a b + kappa1 a b * max (ζ - bS a b) 0
-  first
-    | fun_prop
-    | exact continuous_const.add
-        (continuous_const.mul ((continuous_id.sub continuous_const).max continuous_const))
-    | continuity
+  fun_prop
 
 /-- **Theorem 5.4**: the lower modulus is convex. -/
 theorem phiAff_convexOn {a b : ℝ} (ha : 0 < a) (hb : 0 < b) :

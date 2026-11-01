@@ -36,13 +36,13 @@ theorem cOR0_le_tri_div (hd : GraphMetric G d) (hij : G.Adj i j) :
     intro x
     rw [mp0_apply, mp0_apply]
     by_cases hx : x ∈ common G i j
-    · rw [if_pos hx, if_pos (mem_common.1 hx).2]
+    · rw [ite_eq_left hx, ite_eq_left (mem_common.1 hx).2]
       exact min_le_right _ _
-    · rw [if_neg hx]
+    · rw [ite_eq_right hx]
       by_cases hix : G.Adj i x
-      · rw [if_neg (show ¬ G.Adj j x from fun hjx => hx (mem_common.2 ⟨hix, hjx⟩))]
+      · rw [ite_eq_right (show ¬ G.Adj j x from fun hjx => hx (mem_common.2 ⟨hix, hjx⟩))]
         exact min_le_right _ _
-      · rw [if_neg hix]
+      · rw [ite_eq_right hix]
         exact min_le_left _ _
   have hsum : ∑ x, min (mp G 0 i x) (mp G 0 j x) ≤ tri G i j / ρ G j := by
     calc ∑ x, min (mp G 0 i x) (mp G 0 j x)

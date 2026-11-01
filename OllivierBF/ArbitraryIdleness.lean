@@ -141,7 +141,7 @@ lemma commonPot_lip (hd : GraphMetric G d) {s : ℝ} (hs1 : s ≤ 1) (hs2 : -1 �
 
 lemma commonPot_of_not_mem {s : ℝ} {x : V} (h : x ∉ common G i j) : commonPot G i j s x = 1 := by
   unfold commonPot
-  rw [if_neg h]
+  rw [ite_eq_right h]
 
 lemma commonPot_left (s : ℝ) : commonPot G i j s i = 1 :=
   commonPot_of_not_mem (fun h => G.irrefl (mem_common.1 h).1)
@@ -152,7 +152,7 @@ lemma commonPot_right (s : ℝ) : commonPot G i j s j = 1 :=
 lemma commonPot_sum_common (s : ℝ) :
     ∑ x ∈ common G i j, commonPot G i j s x = tri G i j * (1 + s) := by
   rw [Finset.sum_congr rfl fun x hx =>
-      (show commonPot G i j s x = 1 + s by unfold commonPot; rw [if_pos hx]),
+      (show commonPot G i j s x = 1 + s by unfold commonPot; rw [ite_eq_left hx]),
     Finset.sum_const, nsmul_eq_mul]
   simp only [tri]
 
@@ -205,20 +205,20 @@ lemma envPot_lip (hd : GraphMetric G d) {K : Finset V} (hK : CoversCross G i j K
       linarith
     · have hy1 : 1 ≤ envPot G i j K y := by
         unfold envPot
-        rw [if_neg hY]
+        rw [ite_eq_right hY]
         split_ifs <;> norm_num
       linarith
   · have hx1 : envPot G i j K x ≤ 1 := by
       unfold envPot
-      rw [if_neg hX]
+      rw [ite_eq_right hX]
       split_ifs <;> norm_num
     linarith
 
 lemma envPot_of_not_mem {K : Finset V} {x : V} (h1 : x ∉ uniq G i j) (h2 : x ∉ uniq G j i) :
     envPot G i j K x = 1 := by
   unfold envPot
-  rw [if_neg (show ¬(x ∈ uniq G i j ∧ x ∉ K) from fun h => h1 h.1),
-    if_neg (show ¬(x ∈ uniq G j i ∧ x ∉ K) from fun h => h2 h.1)]
+  rw [ite_eq_right (show ¬(x ∈ uniq G i j ∧ x ∉ K) from fun h => h1 h.1),
+    ite_eq_right (show ¬(x ∈ uniq G j i ∧ x ∉ K) from fun h => h2 h.1)]
 
 lemma envPot_left (K : Finset V) : envPot G i j K i = 1 :=
   envPot_of_not_mem (fun h => G.irrefl (mem_uniq.1 h).2.1) (fun h => (mem_uniq.1 h).1 rfl)
