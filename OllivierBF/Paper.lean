@@ -11,7 +11,7 @@
   the paper (Bourne et al., `BourneFact`). Every other statement here, including the BF interval
   and the 2-hop interval, is proved from the definitions.
 
-  Convention: the endpoints are labelled so that `ρ_i ≤ ρ_j`.
+  Convention: the endpoints are labelled so that `d_i ≤ d_j`, so `a = d_i` and `b = d_j`.
 -/
 module
 
@@ -26,10 +26,10 @@ namespace OllivierBF
 
 /-! ### Real-number forms of the moduli -/
 
-/-- The lower modulus of Theorem 5.4: `φ_{a,b}(ζ) = L⁰ + κ₁ [ζ − 𝔖]₊`. -/
+/-- The lower modulus of Theorem 5.4: `φ_{a,b}(ζ) = L⁰ + λ₁ [ζ − S]₊`. -/
 noncomputable def phiAff (a b ζ : ℝ) : ℝ := L0 a b + kappa1 a b * max (ζ - bS a b) 0
 
-/-- `t⋆ = min{a − 1, ⌊[ζ − 𝔖]₊/𝔗⌋}` of Corollary 5.8. -/
+/-- `t_max(ζ) = min{a − 1, ⌊β(ζ)/T⌋}` with `β(ζ) = [ζ − S]₊` (Lemma 5.6, used in Corollary 5.8). -/
 noncomputable def tStar (a b ζ : ℝ) : ℝ :=
   min (a - 1) (Nat.floor (max (ζ - bS a b) 0 / bT a b) : ℝ)
 
@@ -42,7 +42,7 @@ section modulus
 
 variable {a b : ℝ}
 
-/-- `phiElem` adds a second slope `κ₂ ≥ κ₁` beyond `𝔖 + 𝔗 (a − 1)`, so it is never below `φ`. -/
+/-- `phiElem` adds a second slope `λ₂ ≥ λ₁` beyond `S + T (a − 1)`, so it is never below `φ`. -/
 lemma phiAff_le_phiElem (ha : 1 ≤ a) (hab : a ≤ b) (ζ : ℝ) : phiAff a b ζ ≤ phiElem a b ζ := by
   have ha0 : 0 < a := by linarith
   have hk12 := kappa1_le_kappa2 ha0 hab
@@ -55,7 +55,7 @@ lemma phiAff_le_phiElem (ha : 1 ≤ a) (hab : a ≤ b) (ζ : ℝ) : phiAff a b �
   · rw [min_eq_right h, max_eq_left (by linarith : 0 ≤ z - bT a b * (a - 1))]
     nlinarith [mul_le_mul_of_nonneg_right hk12 (by linarith : (0 : ℝ) ≤ z - bT a b * (a - 1))]
 
-/-- On the attainable range `ζ ≤ 𝔖 + 𝔗 (a − 1)` the two lower moduli coincide. -/
+/-- On the attainable range `ζ ≤ S + T (a − 1)` the two lower moduli coincide. -/
 lemma phiAff_eq_phiElem (ha : 1 ≤ a) (hab : a ≤ b) {ζ : ℝ}
     (hζ : ζ ≤ bS a b + bT a b * (a - 1)) : phiAff a b ζ = phiElem a b ζ := by
   have ha0 : 0 < a := by linarith
@@ -76,7 +76,8 @@ lemma phiAff_mono (ha : 0 < a) (hb : 0 < b) {ζ ζ' : ℝ} (h : ζ ≤ ζ') :
   unfold phiAff
   nlinarith [mul_le_mul_of_nonneg_left hm hk1]
 
-/-- **Theorem 5.4, the virtual edge**: `φ_{a,b}(ζ)` is `L^lazy` at `△ = [ζ − 𝔖]₊/𝔗`, `𝔪 = 0`. -/
+/-- **Theorem 5.4, the virtual edge**: `φ_{a,b}(ζ)` is `L^lazy` at `t_{ij} = [ζ − S]₊/T` and
+`M_{ij} = 0`. -/
 lemma phiAff_virtual (ha : 0 < a) (hb : 0 < b) (ζ : ℝ) :
     phiAff a b ζ = Llazy a b (max (ζ - bS a b) 0 / bT a b) 0 := by
   have hT := bT_pos ha hb
@@ -98,7 +99,7 @@ theorem phiAff_ge_lamTF (ha : 1 ≤ a) (hab : a ≤ b) {ζ : ℝ}
   rw [phiAff_eq_phiElem ha hab hζ]
   exact phiElem_ge_lamTF ha hab ζ
 
-/-- **Corollary 4.2, closed form**: `Λ^tf(L) = (1 − α_max) L − Δ_α (1 − max{L, 2/ρ_max})`. -/
+/-- **Corollary 4.2, closed form**: `Λ^tf(L) = a/(a + 1) L − Δ (1 − max{L, 2/b})`. -/
 lemma lamTF_closed (ha : 0 < a) (hab : a ≤ b) (L : ℝ) :
     lamTF (1 / (b + 1)) (1 / (a + 1)) (1 / (a + 1) - 1 / (b + 1)) b L
       = (1 - 1 / (a + 1)) * L - (1 / (a + 1) - 1 / (b + 1)) * (1 - max L (2 / b)) := by
@@ -126,8 +127,8 @@ lemma lamTF_closed (ha : 0 < a) (hab : a ≤ b) (L : ℝ) :
       · nlinarith [mul_le_mul_of_nonneg_left h hD]
     · exact (le_max_left _ _).trans (le_max_left _ _)
 
-/-- **Theorem 4.7, deficit form**: `L^lazy = Θ − △ Δ_α − 2R` with `Θ = (3 + △)/(b + 1) − 1/(a + 1)`
-and `R = (a − 1 − △)/(a + 1) − 𝔪/(b + 1)`. -/
+/-- **Theorem 4.7, deficit form**: `L^lazy = Θ − t Δ − 2R` with `Θ = (3 + t)/(b + 1) − 1/(a + 1)`
+and `R = (a − 1 − t)/(a + 1) − m/(b + 1)`. -/
 lemma Llazy_deficit (ha : 0 < a) (hb : 0 < b) (t m : ℝ) :
     Llazy a b t m = ((3 + t) / (b + 1) - 1 / (a + 1)) - t * (1 / (a + 1) - 1 / (b + 1))
       - 2 * ((a - 1 - t) / (a + 1) - m / (b + 1)) := by
@@ -214,22 +215,22 @@ lemma cLLY_comm (hd : GraphMetric G d) (i j : V) : cLLY G d i j = cLLY G d j i :
   funext p
   rw [cORp_comm hd p i j]
 
-/-- **Proposition 4.1**: `𝔠_OR ≥ (1 − α_max) 𝔠_LLY − Δ_α (1 − q)`, with `q = (2 + △)/ρ_max`, for
-`ρ_i ≤ ρ_j`. The only hypothesis beyond the definitions is Lemma 3.3 (`BourneFact`). -/
+/-- **Proposition 4.1**: `κ_OR ≥ a/(a + 1) κ_LLY − Δ (1 − q)`, with `q = (2 + t_{ij})/b`, for
+`d_i ≤ d_j`. The only hypothesis beyond the definitions is Lemma 3.3 (`BourneFact`). -/
 theorem mixing_transfer_paper (hd : GraphMetric G d) (hB : BourneFact G d) (hij : G.Adj i j)
     (hle : ρ G i ≤ ρ G j) :
     lamMix (w G i) (w G i - w G j) ((2 + tri G i j) / ρ G j) (cLLY G d i j) ≤ cOR G d i j := by
   have h := mixing_transfer hd hB hij.symm hle
   rwa [tri_comm j i, cLLY_comm hd j i, cOR_comm hd j i] at h
 
-/-- **Proposition 4.1**: `𝔠_LLY ≤ q = (2 + △)/ρ_max`, for `ρ_i ≤ ρ_j`. -/
+/-- **Proposition 4.1**: `κ_LLY ≤ q = (2 + t_{ij})/b`, for `d_i ≤ d_j`. -/
 theorem cLLY_le_q_paper (hd : GraphMetric G d) (hB : BourneFact G d) (hij : G.Adj i j)
     (hle : ρ G i ≤ ρ G j) : cLLY G d i j ≤ (2 + tri G i j) / ρ G j := by
   have h := cLLY_le_q hd hB hij.symm hle
   rwa [tri_comm j i, cLLY_comm hd j i] at h
 
-/-- **Corollary 4.2**: `𝔠_OR ≥ (1 − α_max) L − Δ_α (1 − max{L, 2/ρ_max})` for every
-`L ≤ 𝔠_LLY`, for `ρ_i ≤ ρ_j`. -/
+/-- **Corollary 4.2**: `κ_OR ≥ a/(a + 1) L − Δ (1 − max{L, 2/b})` for every
+`L ≤ κ_LLY`, for `d_i ≤ d_j`. -/
 theorem mixing_tf_paper (hd : GraphMetric G d) (hB : BourneFact G d) (hij : G.Adj i j)
     (hle : ρ G i ≤ ρ G j) {L : ℝ} (hL : L ≤ cLLY G d i j) :
     (1 - w G i) * L - (w G i - w G j) * (1 - max L (2 / ρ G j)) ≤ cOR G d i j := by
@@ -248,18 +249,18 @@ theorem mixing_tf_paper (hd : GraphMetric G d) (hB : BourneFact G d) (hij : G.Ad
 
 /-! ### Proposition 4.10 -/
 
-/-- `1/w_i + 1/w_j = ρ_i + ρ_j + 2`. -/
+/-- `1/w_i + 1/w_j = a + b + 2`. -/
 lemma sig_eq (i j : V) : 1 / w G i + 1 / w G j = ρ G i + ρ G j + 2 := by
   simp only [w, one_div_one_div]
   ring
 
-/-- `U^lazy = −1 + 2m⁰ + (1 + △)Δ_α + m^UU` of Proposition 4.10, with
-`m^UU = min{𝔪 w_i, |ξ_j| w_j}`. -/
+/-- `U^lazy = −1 + 2(2 + t_{ij}) w_j + (1 + t_{ij}) Δ + m^UU` of Proposition 4.10, with
+`m^UU = min{M_{ij} w_i, |ξ_j| w_j}`. -/
 noncomputable def Ulazy (G : SimpleGraph V) [DecidableRel G.Adj] (i j : V) : ℝ :=
   -1 + 2 * ((2 + tri G i j) * w G j) + (1 + tri G i j) * (w G i - w G j)
     + min (matchNum G i j * w G i) ((xi G j i).card * w G j)
 
-/-- `min{|ξ_i| w_i, |ξ_j| w_j} ≤ |U_i| w_i` and `≤ Ξ/(ρ_i + ρ_j + 2)`. -/
+/-- `min{|ξ_i| w_i, |ξ_j| w_j} ≤ |U_i| w_i` and `≤ Ξ/(a + b + 2)`. -/
 lemma mUU_xi_le (hij : G.Adj i j) :
     min ((xi G i j).card * w G i) ((xi G j i).card * w G j) ≤ (ρ G i - 1 - tri G i j) * w G i ∧
       min ((xi G i j).card * w G i) ((xi G j i).card * w G j)
@@ -283,7 +284,7 @@ lemma mUU_xi_le (hij : G.Adj i j) :
   rw [sig_eq i j] at hharm
   exact ⟨hm1.trans (mul_le_mul_of_nonneg_right hX hwi.le), hharm⟩
 
-/-- **Proposition 4.10**: the bounds on `m^UU = min{𝔪 w_i, |ξ_j| w_j}`. -/
+/-- **Proposition 4.10**: the bounds on `m^UU = min{M_{ij} w_i, |ξ_j| w_j}`. -/
 lemma mUU_le (hij : G.Adj i j) :
     min (matchNum G i j * w G i) ((xi G j i).card * w G j) ≤ (ρ G i - 1 - tri G i j) * w G i ∧
       min (matchNum G i j * w G i) ((xi G j i).card * w G j)
@@ -295,8 +296,8 @@ lemma mUU_le (hij : G.Adj i j) :
   obtain ⟨h1, h2⟩ := mUU_xi_le hij
   exact ⟨hle.trans h1, hle.trans h2⟩
 
-/-- **Proposition 4.10**: `𝔠_OR ≤ U^lazy ≤ (2 + △) w_j − Δ_α`. Proved by the vertex-cover
-potentials of `Cover.lean`, with the covers `ξ_j` and a König cover of `𝔪` vertices. -/
+/-- **Proposition 4.10**: `κ_OR ≤ U^lazy ≤ (2 + t_{ij}) w_j − Δ`. Proved by the vertex-cover
+potentials of `Cover.lean`, with the covers `ξ_j` and a König cover of `M_{ij}` vertices. -/
 theorem lazy_envelope_paper (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) :
     cOR G d i j ≤ Ulazy G i j ∧ Ulazy G i j ≤ (2 + tri G i j) * w G j - (w G i - w G j) := by
   have hwi := w_pos (G := G) i
@@ -324,7 +325,7 @@ theorem lazy_envelope_paper (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G
 
 /-! ### Lemma 3.6 in the form used by Section 5 -/
 
-/-- `𝔠_BF ≤ 𝔖 + 𝔗 △ + 2σ` for `ρ_min ≥ 2` (Definition 3.2 and Lemma 3.6). -/
+/-- `κ_BF ≤ S + T t_{ij} + 2σ_{ij}` for `a ≥ 2` (Definition 3.2 and Lemma 3.6). -/
 lemma cBF_le_piece3_paper (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) (h2 : 2 ≤ ρ G i) :
     cBF G i j ≤ piece3 (ρ G i) (ρ G j) (tri G i j) (matchNum G i j / ρ G j) := by
   have hmin : ¬ ρmin G i j ≤ 1 := by rw [ρmin_eq hle]; linarith
@@ -337,7 +338,7 @@ lemma cBF_le_piece3_paper (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) (h2 : 2 �
 
 /-! ### Theorem 5.4 and Proposition 5.5 -/
 
-/-- **Theorem 5.4**: `𝔠_BF ≥ ζ` implies `𝔠_OR ≥ φ_{a,b}(ζ)`, for every edge with `ρ_i ≤ ρ_j`. -/
+/-- **Theorem 5.4**: `κ_BF ≥ ζ` implies `κ_OR ≥ φ_{a,b}(ζ)`, for every edge with `d_i ≤ d_j`. -/
 theorem bf_lower_paper (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) {ζ : ℝ}
     (hζ : ζ ≤ cBF G i j) : phiAff (ρ G i) (ρ G j) ζ ≤ cOR G d i j := by
   have hρi := ρ_pos hij
@@ -358,7 +359,7 @@ theorem bf_lower_paper (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i �
     rw [hz, mul_zero, add_zero]
     exact bf_lower_leaf hd hij hle h1
 
-/-- **Proposition 5.5, range of BF**: `𝔠_BF ≤ 𝔖 + 𝔗 (ρ_min − 1)` on every edge. -/
+/-- **Proposition 5.5, range of BF**: `κ_BF ≤ S + T (a − 1)` on every edge. -/
 theorem cBF_le_range (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) :
     cBF G i j ≤ bS (ρ G i) (ρ G j) + bT (ρ G i) (ρ G j) * (ρ G i - 1) := by
   have hρi := ρ_pos hij
@@ -384,19 +385,20 @@ theorem cBF_le_range (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) :
 
 /-! ### Lemma 5.6 and Theorem 5.7 -/
 
-/-- The envelope `Ψ̂(t)` of Theorem 5.7, a minimum of two affine functions of `t`. -/
+/-- The envelope `Ψ(t)` of Theorem 5.7, a minimum of two affine functions of `t`. -/
 noncomputable def psiTwo (G : SimpleGraph V) [DecidableRel G.Adj] (i j : V) (ζ t : ℝ) : ℝ :=
   min ((2 + t) * w G j - (w G i - w G j))
     (-1 + 2 * ((2 + t) * w G j) + (1 + t) * (w G i - w G j)
       + ρ G j * (ρ G j - 1) * (max (ζ - bfS G i j) 0 - bfT G i j * t) / (ρ G i + ρ G j + 2))
 
-/-- The upper modulus `ψ_{a,b}(ζ)` of Theorem 5.7: the maximum of `Ψ̂` over the integers
-`0, 1, …, ⌊△_max(ζ)⌋`. -/
+/-- The upper modulus `ψ_{a,b}(ζ)` of Theorem 5.7: the maximum of `Ψ` over the integers
+`0, 1, …, t_max(ζ)` (`t_max(ζ) = ⌊triMax⌋`). -/
 noncomputable def psiInt (G : SimpleGraph V) [DecidableRel G.Adj] (i j : V) (ζ : ℝ) : ℝ :=
   (Finset.range (Nat.floor (triMax G i j ζ) + 1)).sup'
     ⟨0, Finset.mem_range.2 (Nat.zero_lt_succ _)⟩ (fun n : ℕ => psiTwo G i j ζ n)
 
-/-- **Theorem 5.7, deficit form**: `Ψ̂(t) = Θ(t) − [(ρ_i − 1 − t) w_i − ♯*(𝓫 − 𝔗 t)/(ρ_i + ρ_j + 2)]₊`
+/-- **Theorem 5.7, deficit form**:
+`Ψ(t) = Θ(t) − [(a − 1 − t) w_i − b(b − 1)(β(ζ) − T t)/(a + b + 2)]₊`
 with `Θ(t) = (3 + t) w_j − w_i`. -/
 lemma psiTwo_deficit (hij : G.Adj i j) (ζ t : ℝ) :
     psiTwo G i j ζ t = ((3 + t) * w G j - w G i)
@@ -416,7 +418,7 @@ lemma psiTwo_deficit (hij : G.Adj i j) (ζ t : ℝ) :
   · rw [max_eq_left h, min_eq_right (by nlinarith [hρw])]
     linarith [hρw]
 
-/-- The triangle count is admissible: `△ ≤ △_max(ζ)`. -/
+/-- The triangle count is admissible: `t_{ij} ≤ min{a − 1, β(ζ)/T}` (`triMax`). -/
 lemma tri_le_triMax (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) {ζ : ℝ} (hζ : cBF G i j ≤ ζ) :
     (tri G i j : ℝ) ≤ triMax G i j ζ := by
   have hT : 0 < bfT G i j := bfT_pos' hij
@@ -433,7 +435,8 @@ lemma tri_le_triMax (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) {ζ : ℝ} (hζ 
   · rw [leaf_tri hij (rho_eq_one_of_lt_two hij h2), zero_mul]
     exact le_max_right _ _
 
-/-- **Lemma 5.6**: `△ ≤ △_max(ζ)` and `Ξ ≤ ♯*(𝓫(ζ) − 𝔗 △)`. -/
+/-- **Lemma 5.6**: `t_{ij} ≤ min{a − 1, β(ζ)/T}`, which for the integer `t_{ij}` is
+`t_{ij} ≤ t_max(ζ)`, and `Ξ ≤ b(b − 1)(β(ζ) − T t_{ij})`. -/
 lemma budget_region (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) {ζ : ℝ} (hζ : cBF G i j ≤ ζ) :
     (tri G i j : ℝ) ≤ triMax G i j ζ ∧
       (Xi G i j : ℝ) ≤ ρ G j * (ρ G j - 1) * (max (ζ - bfS G i j) 0 - bfT G i j * tri G i j) := by
@@ -445,7 +448,7 @@ lemma budget_region (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) {ζ : ℝ} (hζ 
     rw [leaf_Xi hij h1, leaf_tri hij h1, mul_zero, sub_zero, Nat.cast_zero]
     exact mul_nonneg (mul_nonneg (by linarith) (by linarith)) (le_max_right _ _)
 
-/-- `U^lazy ≤ Ψ̂(△)`: the two bounds on `m^UU` give the two pieces of `Ψ̂`. -/
+/-- `U^lazy ≤ Ψ(t_{ij})`: the two bounds on `m^UU` give the two pieces of `Ψ`. -/
 lemma Ulazy_le_psiTwo (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) {ζ : ℝ}
     (hζ : cBF G i j ≤ ζ) : Ulazy G i j ≤ psiTwo G i j ζ (tri G i j) := by
   have hρi := ρ_pos hij
@@ -472,7 +475,7 @@ lemma psiTwo_le_psiInt {ζ : ℝ} {n : ℕ} (hn : (n : ℝ) ≤ triMax G i j ζ)
   unfold psiInt
   exact Finset.le_sup' (fun m : ℕ => psiTwo G i j ζ m) hmem
 
-/-- **Theorem 5.7**: `𝔠_BF ≤ ζ` implies `𝔠_OR ≤ ψ_{a,b}(ζ)`, for every edge with `ρ_i ≤ ρ_j`. -/
+/-- **Theorem 5.7**: `κ_BF ≤ ζ` implies `κ_OR ≤ ψ_{a,b}(ζ)`, for every edge with `d_i ≤ d_j`. -/
 theorem bf_upper_paper (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) {ζ : ℝ}
     (hζ : cBF G i j ≤ ζ) : cOR G d i j ≤ psiInt G i j ζ :=
   ((lazy_envelope_paper hd hij hle).1.trans (Ulazy_le_psiTwo hij hle hζ)).trans
@@ -509,7 +512,7 @@ theorem psiInt_mono (hij : G.Adj i j) {ζ ζ' : ℝ} (h : ζ ≤ ζ') :
 
 /-! ### Corollary 5.8 and Proposition 5.9 -/
 
-/-- **Corollary 5.8, the key inequality**: `φ^ℤ_{a,b}(𝔠_BF) ≤ L^lazy`, for `ρ_i ≤ ρ_j`. -/
+/-- **Corollary 5.8, the key inequality**: `φ^ℤ_{a,b}(κ_BF) ≤ L^lazy`, for `d_i ≤ d_j`. -/
 theorem phiInt_le_Llazy (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) :
     phiInt (ρ G i) (ρ G j) (cBF G i j) ≤ Llazy (ρ G i) (ρ G j) (tri G i j) (matchNum G i j) := by
   have hρi := ρ_pos hij
@@ -525,7 +528,7 @@ theorem phiInt_le_Llazy (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) :
     have hzmax : max (cBF G i j - bS (ρ G i) (ρ G j)) 0
         = bT (ρ G i) (ρ G j) * tri G i j + C4 G i j := by
       rw [hz]; exact max_eq_left (add_nonneg (mul_nonneg hT.le (Nat.cast_nonneg _)) hC0)
-    -- the triangle count is admissible: `△ ≤ t⋆`
+    -- the triangle count is admissible: `t_{ij} ≤ t_max`
     have htle : (tri G i j : ℝ) ≤ tStar (ρ G i) (ρ G j) (cBF G i j) := by
       unfold tStar
       refine le_min (tri_le hij) ?_
@@ -562,15 +565,15 @@ theorem phiInt_le_Llazy (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) :
     unfold Llazy L0
     ring
 
-/-- **Corollary 5.8**: the BF interval `𝔠_OR ∈ [φ^ℤ_{a,b}(𝔠_BF), ψ_{a,b}(𝔠_BF)]`, for every edge
-with `ρ_i ≤ ρ_j`. -/
+/-- **Corollary 5.8**: the BF interval `κ_OR ∈ [φ^ℤ_{a,b}(κ_BF), ψ_{a,b}(κ_BF)]`, for every edge
+with `d_i ≤ d_j`. -/
 theorem bf_interval_paper (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) :
     phiInt (ρ G i) (ρ G j) (cBF G i j) ≤ cOR G d i j ∧ cOR G d i j ≤ psiInt G i j (cBF G i j) :=
   ⟨(phiInt_le_Llazy hij hle).trans (lazy_quadrangle hd hij hle),
     bf_upper_paper hd hij hle le_rfl⟩
 
 /-- **Proposition 5.9**: the 2-hop interval
-`φ^ℤ(𝔠_BF) ≤ L^lazy ≤ 𝔠_OR ≤ U^lazy ≤ Ψ̂(△) ≤ ψ(𝔠_BF)`, for every edge with `ρ_i ≤ ρ_j`. -/
+`φ^ℤ(κ_BF) ≤ L^lazy ≤ κ_OR ≤ U^lazy ≤ Ψ(t_{ij}) ≤ ψ(κ_BF)`, for every edge with `d_i ≤ d_j`. -/
 theorem two_hop_interval_paper (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) :
     phiInt (ρ G i) (ρ G j) (cBF G i j) ≤ Llazy (ρ G i) (ρ G j) (tri G i j) (matchNum G i j) ∧
       Llazy (ρ G i) (ρ G j) (tri G i j) (matchNum G i j) ≤ cOR G d i j ∧
@@ -583,20 +586,20 @@ theorem two_hop_interval_paper (hd : GraphMetric G d) (hij : G.Adj i j) (hle : �
 /-! ### Appendix C -/
 
 /-- The coverage bound (Proposition 4.10, last inequality; equation (C.1)):
-`𝔠_OR ≤ (2 + △) w_j − Δ_α`. -/
+`κ_OR ≤ (2 + t_{ij}) w_j − Δ`. -/
 theorem coverage_bound (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) :
     cOR G d i j ≤ (2 + tri G i j) * w G j - (w G i - w G j) :=
   (lazy_envelope_paper hd hij hle).1.trans (lazy_envelope_paper hd hij hle).2
 
-/-- The closed form in (C.1): `(2 + t) w_j − Δ_α = (3 + t)/(ρ_j + 1) − 1/(ρ_i + 1)`. -/
+/-- The closed form in (C.1): `(2 + t) w_j − Δ = (3 + t)/(d_j + 1) − 1/(d_i + 1)`. -/
 lemma coverage_bound_eq (t : ℝ) :
     (2 + t) * w G j - (w G i - w G j) = (3 + t) / (ρ G j + 1) - 1 / (ρ G i + 1) := by
   simp only [w]
   ring
 
-/-- **Corollary C.1**, with the closed-form threshold `t_min(ϑ) = ⌈(ϑ + Δ_α)(ρ_j + 1) − 2⌉₊`.
-The last conjunct says that no edge with these degrees has `𝔠_OR ≥ ϑ` unless
-`t_min(ϑ) ≤ ρ_i − 1`. -/
+/-- **Corollary C.1**, with the closed-form threshold `t_min(ϑ) = ⌈(ϑ + Δ)(b + 1) − 2⌉₊`.
+The last conjunct says that no edge with these degrees has `κ_OR ≥ ϑ` unless
+`t_min(ϑ) ≤ a − 1`. -/
 theorem or_to_bf_lower_paper (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j)
     (h2 : 2 ≤ ρ G i) {ϑ : ℝ} (h : ϑ ≤ cOR G d i j) :
     Nat.ceil ((ϑ + (w G i - w G j)) * (ρ G j + 1) - 2) ≤ tri G i j ∧
@@ -622,8 +625,8 @@ theorem or_to_bf_lower_paper (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ 
   rw [ite_eq_right hmin]
   nlinarith [mul_le_mul_of_nonneg_left hc hT.le, C4_nonneg (G := G) hij]
 
-/-- **Corollary C.2**: inverting the lower modulus, `𝔠_OR ≤ ϑ` implies
-`𝔠_BF ≤ 𝔖 + min{𝔗(ρ_i − 1), (ϑ − L⁰)/κ₁}`. -/
+/-- **Corollary C.2**: inverting the lower modulus, `κ_OR ≤ ϑ` implies
+`κ_BF ≤ S + min{T (a − 1), (ϑ − L⁰)/λ₁}`. -/
 theorem or_to_bf_upper_paper (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j)
     (h2 : 2 ≤ ρ G i) {ϑ : ℝ} (h : cOR G d i j ≤ ϑ) :
     cBF G i j ≤ bS (ρ G i) (ρ G j) + min (bT (ρ G i) (ρ G j) * (ρ G i - 1))
@@ -657,7 +660,7 @@ theorem or_to_bf_upper_paper (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ 
   linarith
 
 /-- The second bound of Corollary C.3 of an earlier version (dropped from the paper: computing
-`𝔪` and `𝔠₄` already determines `𝔠_BF`), kept for reference. -/
+`M_{ij}` and `□_{ij}` already determines `κ_BF`), kept for reference. -/
 theorem or_to_bf_upper_matching (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j)
     (h2 : 2 ≤ ρ G i) {ϑ : ℝ} (h : cOR G d i j ≤ ϑ) :
     cBF G i j ≤ bS (ρ G i) (ρ G j) + min (bT (ρ G i) (ρ G j) * (ρ G i - 1))

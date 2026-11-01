@@ -149,7 +149,7 @@ lemma exists_residual_coupling (hd : GraphMetric G d) (hij : G.Adj i j) (hle : �
   have hR0 : 0 ≤ ((uniq G i j).card : ℝ) * w G i - M.card * w G j := by
     have h : (M.card : ℝ) ≤ (uniq G i j).card := by exact_mod_cast hM.card_le
     nlinarith
-  -- balance identity: unmatched demand `D' = (2 + △) δ + R`
+  -- balance identity: unmatched demand `D' = (2 + t_{ij}) Δ + R_{ij}`
   have hbal : ((uniq G j i \ M.image Prod.snd).card : ℝ) * w G j
       = (2 + tri G i j) * (w G i - w G j) + (((uniq G i j).card : ℝ) * w G i - M.card * w G j) := by
     have hρi := ρ_pos hij
@@ -297,8 +297,8 @@ lemma exists_residual_coupling (hd : GraphMetric G d) (hij : G.Adj i j) (hle : �
     rw [cost_add, cost_add, cost_add]
     nlinarith [hC1, hC2, hC3, hC4]
 
-/-- **Theorem `thm:lazy-quadrangle` (lazy quadrangle bound).** For `ρ_i ≤ ρ_j`,
-`𝔠_OR(i,j) ≥ (3 + △)/(ρ_min + 1) + (3 + 2△ + 2𝔪)/(ρ_max + 1) − 2`. -/
+/-- **Theorem `thm:lazy-quadrangle` (lazy quadrangle bound).** For `d_i ≤ d_j`,
+`κ_OR(i,j) ≥ (3 + t_{ij})/(a + 1) + (3 + 2t_{ij} + 2M_{ij})/(b + 1) − 2`. -/
 theorem lazy_quadrangle (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) :
     Llazy (ρ G i) (ρ G j) (tri G i j) (matchNum G i j) ≤ cOR G d i j := by
   obtain ⟨M, hM, hMcard⟩ := exists_max_matching (G := G) i j
@@ -340,10 +340,11 @@ section envelope
 
 variable {i j : V}
 
-/-- For a coupling of `m_i, m_j` that saturates the diagonal, with `ρ_i ≤ ρ_j`, the mass moved
-along edges is at most `τ` and at most `δ + min(△ δ, τ) + min(|ξ_i| w_i, |ξ_j| w_j)`: every
-off-diagonal unit ends in `U_j` (`lazy_resid_j`), and a unit-distance move into `U_j` starts at
-`j`, at a common neighbour, or in `ξ_i` along a cross edge, never at `i`. -/
+/-- For a coupling of `m_i, m_j` that saturates the diagonal, with `d_i ≤ d_j`, the mass moved
+along edges is at most `τ_{ij}` and at most
+`Δ + min(t_{ij} Δ, τ_{ij}) + min(|ξ_i| w_i, |ξ_j| w_j)`: every off-diagonal unit ends in `U_j`
+(`lazy_resid_j`), and a unit-distance move into `U_j` starts at `j`, at a common neighbour, or in
+`ξ_i` along a cross edge, never at `i`. -/
 lemma unit_mass_le (_hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j)
     {π : V → V → ℝ} (hπ : IsCoupling (mLazy G i) (mLazy G j) π)
     (hsat : ∀ k, π k k = min (mLazy G i k) (mLazy G j k)) :
@@ -519,7 +520,7 @@ theorem lazy_envelope (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.A
         = ∑ k, (mLazy G j k - min (mLazy G i k) (mLazy G j k)) := by
       rw [Finset.sum_sub_distrib, Finset.sum_sub_distrib, mLazy_sum hij, mLazy_sum hij.symm]
     rw [hsum, hres, Finset.sum_ite_mem, Finset.univ_inter, Finset.sum_const, nsmul_eq_mul]
-  -- `|U_j| w_j = 1 − (2 + △) w_j`
+  -- `|U_j| w_j = 1 − (2 + t_{ij}) w_j`
   have hτm0 : ((uniq G j i).card : ℝ) * w G j = 1 - (2 + (tri G i j : ℝ)) * w G j := by
     have hU := card_uniq_real hij.symm
     have hρj := ρ_pos hij.symm
@@ -574,7 +575,7 @@ noncomputable def Lsq (i j : V) : ℝ :=
   -max (jlK (G := G) i j - jlZmax (G := G) i j - matchStat G i j) 0
   - max (jlK (G := G) i j - jlZmin (G := G) i j - matchStat G i j) 0 + jlZmax (G := G) i j
 
-/-- The non-lazy measure: `ν_u(k) = 1/ρ_u` on `N(u)`. -/
+/-- The non-lazy measure: `ν_u(k) = 1/d_u` on `N(u)`. -/
 lemma mp0_apply (u k : V) : mp G 0 u k = if G.Adj u k then 1 / ρ G u else 0 := by
   unfold mp
   by_cases h : k = u
@@ -589,9 +590,9 @@ lemma pos_part_sub_le {A B : ℝ} (h : B ≤ A) : max A 0 - max B 0 ≤ A - B :=
   · rw [max_eq_left hA, max_eq_left hB]
 
 set_option maxHeartbeats 1000000 in
-/-- The greedy coupling of `ν_i, ν_j` for `ρ_i ≤ ρ_j` (proof of Theorem `thm:JL-plus-squares`):
-keep `v_j` on `C`, move `v_j` along a maximum matching, fill the unmatched part `W'` of `U_j`
-from `j`, then `C`, then `U_i`, and send everything else to `i`. -/
+/-- The greedy coupling of `ν_i, ν_j` for `d_i ≤ d_j` (proof of Theorem `thm:JL-plus-squares`):
+keep `v_j = 1/d_j` on `C`, move `v_j` along a maximum matching, fill the unmatched part `W'` of
+`U_j` from `j`, then `C`, then `U_i`, and send everything else to `i`. -/
 lemma exists_jl_coupling_le (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j)
     {M : Finset (V × V)} (hM : IsCrossMatching G i j M) :
     ∃ π, IsCoupling (mp G 0 i) (mp G 0 j) π ∧
@@ -901,7 +902,7 @@ lemma Lsq_comm (i j : V) : Lsq (G := G) i j = Lsq (G := G) j i := by
 /-- The greedy coupling of `ν_i, ν_j` from the proof of Theorem `thm:JL-plus-squares`. -/
 lemma exists_jl_coupling (hd : GraphMetric G d) (hij : G.Adj i j) :
     ∃ π, IsCoupling (mp G 0 i) (mp G 0 j) π ∧ cost d π ≤ 1 - Lsq (G := G) i j := by
-  -- the statement of `exists_jl_coupling_le` is `L^□` written out for `ρ_i ≤ ρ_j`
+  -- the statement of `exists_jl_coupling_le` is `L^□` written out for `d_i ≤ d_j`
   have key : ∀ {a b : V}, G.Adj a b → ρ G a ≤ ρ G b →
       ∃ π, IsCoupling (mp G 0 a) (mp G 0 b) π ∧ cost d π ≤ 1 - Lsq (G := G) a b := by
     intro a b hab hle
@@ -941,7 +942,7 @@ end jl
 
 /-! ### Proposition `prop:bf-unclipped` (i): BF is the third affine piece -/
 
-/-- With `𝒮` replaced by `𝔠₄/2`, the third piece of `L^□` is exactly `𝔠_BF`. -/
+/-- With `σ_{ij}` replaced by `□_{ij}/2`, the third piece of `L^□` is exactly `κ_BF`. -/
 theorem bf_is_third_piece {i j : V} (hij : G.Adj i j) (h2 : ¬ ρmin G i j ≤ 1) :
     cBF G i j = jlZmax (G := G) i j
       - (jlK (G := G) i j - jlZmax (G := G) i j - C4 G i j / 2)
@@ -980,7 +981,7 @@ lemma mLazy_mix (hij : G.Adj i j) (_hle : ρ G j ≤ ρ G i) (k : V) :
       exact (lazy_nbr_weight hij.symm).symm
     · rw [ite_eq_right (not_or.2 ⟨hk, ha⟩), ite_eq_right ha, mul_zero, mul_zero, add_zero]
 
-/-- `W₁(m_i^p, δ_j) ≤ p + (1 − p)(2 − q)` with `q = (2 + △)/ρ_i`, via the product coupling
+/-- `W₁(m_i^p, δ_j) ≤ p + (1 − p)(2 − q)` with `q = (2 + t_{ij})/d_i`, via the product coupling
 with `δ_j` and the split `N(i) = {j} ⊔ C ⊔ U_i`. -/
 lemma W1_to_dirac_le (hd : GraphMetric G d) (hij : G.Adj i j) (p : ℝ) (hp0 : 0 ≤ p) (hp1 : p ≤ 1) :
     W1 d (mp G p i) (dirac j) ≤ p + (1 - p) * (2 - (2 + tri G i j) / ρ G i) := by
@@ -1023,8 +1024,8 @@ lemma W1_to_dirac_le (hd : GraphMetric G d) (hij : G.Adj i j) (p : ℝ) (hp0 : 0
     field_simp; ring
   linarith [mul_le_mul_of_nonneg_left hS hc0]
 
-/-- `𝔠_LLY ≤ q = (2 + △)/ρ_max`: by Bourne et al. at `p₀ = w_i` and the overlap bound,
-since `Σ min(m_i^{p₀}, m_j^{p₀}) ≤ (2 + △) p₀`. -/
+/-- `κ_LLY ≤ q = (2 + t_{ij})/b`: by Bourne et al. at `p₀ = w_i` and the overlap bound,
+since `Σ min(m_i^{p₀}, m_j^{p₀}) ≤ (2 + t_{ij}) p₀`. -/
 lemma cLLY_le_q (hd : GraphMetric G d) (hB : BourneFact G d) (hij : G.Adj i j)
     (hle : ρ G j ≤ ρ G i) : cLLY G d i j ≤ (2 + tri G i j) / ρ G i := by
   classical
@@ -1073,7 +1074,7 @@ lemma cLLY_le_q (hd : GraphMetric G d) (hB : BourneFact G d) (hij : G.Adj i j)
   have hov := W1_ge_overlap (d := d) hne hd.self (fun x y h => hd.one_le h)
   rw [mp_sum hij] at hov
   unfold cORp at hb
-  -- `(1 − w_i) 𝔠_LLY ≤ (2 + △) w_i`, and `1 − w_i = ρ_i w_i`
+  -- `(1 − w_i) κ_LLY ≤ (2 + t_{ij}) w_i`, and `1 − w_i = d_i w_i`
   have h1w : 1 - w G i = ρ G i * w G i := by
     have h1 : ρ G i + 1 ≠ 0 := by linarith
     simp only [w]; field_simp; ring
@@ -1082,8 +1083,8 @@ lemma cLLY_le_q (hd : GraphMetric G d) (hB : BourneFact G d) (hij : G.Adj i j)
   rw [le_div_iff₀ hρi]
   nlinarith
 
-/-- **Proposition `prop:mixing-transfer` (B1).** For `ρ_i ≥ ρ_j`,
-`𝔠_OR ≥ (1 − α_max) 𝔠_LLY − Δ(α)(1 − q)`. -/
+/-- **Proposition `prop:mixing-transfer` (B1).** For `d_i ≥ d_j`,
+`κ_OR ≥ a/(a + 1) κ_LLY − Δ (1 − q)`. -/
 theorem mixing_transfer (hd : GraphMetric G d) (hB : BourneFact G d) (hij : G.Adj i j)
     (hle : ρ G j ≤ ρ G i) :
     lamMix (w G j) (w G j - w G i) ((2 + tri G i j) / ρ G i) (cLLY G d i j) ≤ cOR G d i j := by
@@ -1113,7 +1114,7 @@ theorem mixing_transfer (hd : GraphMetric G d) (hB : BourneFact G d) (hij : G.Ad
   have eν : (fun y => (1 - θ) * mp G p j y + θ * dirac j y) = mLazy G j := by
     funext y; rw [mLazy_mix hij hle y]
   rw [eμ, eν] at hmix
-  -- Bourne: `W₁(m_i^p, m_j^p) = 1 − (1 − p) 𝔠_LLY`, with `p = 1/(ρ_max + 1)`
+  -- Bourne: `W₁(m_i^p, m_j^p) = 1 − (1 − p) κ_LLY`, with `p = 1/(b + 1)`
   have hρmax : ρmax G i j = ρ G i := max_eq_left hle
   have hb := hB i j hij
   rw [hρmax] at hb
@@ -1158,7 +1159,7 @@ theorem mixing_dominates (hd : GraphMetric G d) (hB : BourneFact G d) (hij : G.A
     nlinarith [mul_nonneg (by linarith : (0 : ℝ) ≤ w G j - w G i) hq0]
 
 /-- **Corollary `cor:mixing-triangle-free`.** The triangle-free version: the mixing
-transfer with `q` replaced by `2/ρ_max`, which needs no triangle count. -/
+transfer with `q` replaced by `2/b`, which needs no triangle count. -/
 theorem mixing_triangle_free (hd : GraphMetric G d) (hB : BourneFact G d) (hij : G.Adj i j)
     (hle : ρ G j ≤ ρ G i) {L : ℝ} (hL : L ≤ cLLY G d i j) :
     lamMix (w G j) (w G j - w G i) (2 / ρ G i) L ≤ cOR G d i j := by

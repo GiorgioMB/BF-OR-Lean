@@ -1,6 +1,9 @@
 /-
   Local structure of an edge `(i, j)`: common neighbours `C`, unique neighbours
-  `U_i`, `U_j`, cross-edge vertices `ξ`, 4-cycle closers, cross matchings.
+  `U_i`, `U_j`, cross-edge vertices `ξ`, degrees in the cross-edge graph `H_{ij}`
+  (between `U_i` and `U_j`), cross matchings.
+  Notation of the paper: `d_u = ρ G u` is the degree of `u`, `a` and `b` are the
+  smaller and the larger endpoint degree, `t_{ij} = tri G i j`, `M_{ij} = matchNum G i j`.
 -/
 module
 
@@ -80,14 +83,14 @@ def xi (u v : V) : Finset V := (uniq G u v).filter fun k => ∃ w ∈ uniq G v u
 /-- `Ξ_{ij} = |ξ_i| + |ξ_j|`. -/
 def Xi (i j : V) : ℕ := (xi G i j).card + (xi G j i).card
 
-/-- 4-cycle closers `\tilde□(k, u, v) = |N(k) ∩ U_v|`. -/
+/-- `|N(k) ∩ U_v|`: for `k ∈ U_u`, the number of cross edges at `k`, its degree in `H_{uv}`. -/
 def boxClose (k u v : V) : ℕ := (G.neighborFinset k ∩ uniq G v u).card
 
-/-- `ϖ_max(i, j)`. -/
+/-- `γ_max`, the maximum degree of the cross-edge graph `H_{ij}`. -/
 def varpi (i j : V) : ℕ :=
   max ((uniq G i j).sup fun k => boxClose G k i j) ((uniq G j i).sup fun w => boxClose G w j i)
 
-/-- A matching of the cross-edge graph `B_{ij}`, as a set of oriented pairs `(u, w)`
+/-- A matching of the cross-edge graph `H_{ij}`, as a set of oriented pairs `(u, w)`
 with `u ∈ U_i`, `w ∈ U_j`. -/
 def IsCrossMatching (i j : V) (M : Finset (V × V)) : Prop :=
   (∀ e ∈ M, e.1 ∈ uniq G i j ∧ e.2 ∈ uniq G j i ∧ G.Adj e.1 e.2) ∧
@@ -95,7 +98,7 @@ def IsCrossMatching (i j : V) (M : Finset (V × V)) : Prop :=
   (∀ e ∈ M, ∀ e' ∈ M, e.2 = e'.2 → e = e')
 
 open Classical in
-/-- Matching number `𝔪(i, j)` of the cross-edge graph. -/
+/-- Matching number `M_{ij}` of the cross-edge graph. -/
 noncomputable def matchNum (i j : V) : ℕ :=
   ((Finset.univ : Finset (Finset (V × V))).filter (IsCrossMatching G i j)).sup Finset.card
 
@@ -119,7 +122,7 @@ lemma xi_subset (u v : V) : xi G u v ⊆ uniq G u v := Finset.filter_subset _ _
 
 /-! ### Counting -/
 
-/-- `|U_u| + 1 + △ = deg u` (as natural numbers). -/
+/-- `|U_u| + 1 + t_{uv} = d_u` (as natural numbers). -/
 lemma card_uniq_add {u v : V} (huv : G.Adj u v) :
     (uniq G u v).card + 1 + tri G u v = G.degree u := by
   have hv : v ∈ G.neighborFinset u \ G.neighborFinset v := by
@@ -130,20 +133,20 @@ lemma card_uniq_add {u v : V} (huv : G.Adj u v) :
   simp only [uniq, tri, common]
   omega
 
-/-- Real version: `|U_u| = ρ_u − 1 − △`. -/
+/-- Real version: `|U_u| = d_u − 1 − t_{uv}`. -/
 lemma card_uniq_real {u v : V} (huv : G.Adj u v) :
     ((uniq G u v).card : ℝ) = ρ G u - 1 - tri G u v := by
   have := card_uniq_add huv
   simp only [ρ]
   rw [← this]; push_cast; ring
 
-/-- Triangles are at most `ρ_min − 1`. -/
+/-- Triangles are at most `a − 1`. -/
 lemma tri_le {u v : V} (huv : G.Adj u v) : (tri G u v : ℝ) ≤ ρ G u - 1 := by
   have := card_uniq_real huv
   have h0 : (0 : ℝ) ≤ (uniq G u v).card := by positivity
   linarith
 
-/-- **Lemma `xi_bound`**: `Ξ ≤ ρ_u + ρ_v − 2 − 2△`. -/
+/-- **Lemma `xi_bound`**: `Ξ ≤ d_u + d_v − 2 − 2t_{uv}`. -/
 theorem Xi_le {u v : V} (huv : G.Adj u v) :
     (Xi G u v : ℝ) ≤ ρ G u + ρ G v - 2 - 2 * tri G u v := by
   have h1 : ((xi G u v).card : ℝ) ≤ (uniq G u v).card := by
@@ -154,11 +157,11 @@ theorem Xi_le {u v : V} (huv : G.Adj u v) :
   rw [card_uniq_real huv.symm, tri_comm] at h2
   simp only [Xi]; push_cast; linarith
 
-/-- 4-cycle closers are bounded by the opposite unique neighbourhood. -/
+/-- A degree in the cross-edge graph is at most the size of the opposite unique neighbourhood. -/
 lemma boxClose_le (k u v : V) : boxClose G k u v ≤ (uniq G v u).card :=
   Finset.card_le_card Finset.inter_subset_right
 
-/-- **Lemma `box_count`**: `ϖ_max ≤ ρ_max − 1`. -/
+/-- **Lemma `box_count`**: `γ_max ≤ b − 1`. -/
 theorem varpi_le {i j : V} (hij : G.Adj i j) :
     (varpi G i j : ℝ) ≤ max (ρ G i) (ρ G j) - 1 := by
   have hA : (uniq G i j).sup (fun k => boxClose G k i j) ≤ (uniq G j i).card :=

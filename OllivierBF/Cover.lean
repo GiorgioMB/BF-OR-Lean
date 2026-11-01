@@ -1,12 +1,12 @@
 /-
-  König's theorem for the cross-edge graph, the bound `𝔠₄ ≤ 2σ` (Lemma 3.6 of the paper),
+  König's theorem for the cross-edge graph, the bound `□_{ij} ≤ 2σ_{ij}` (Lemma 3.6 of the paper),
   and the vertex-cover potentials behind the lazy transport envelope (Proposition 4.10).
 
   Nothing in this file takes a published result as a hypothesis. König's theorem is derived
   from Hall's marriage theorem in Mathlib by adding dummy vertices, and the envelope is a
   weak-duality bound: a 1-Lipschitz potential bounds every coupling from below.
 
-  Convention: where it matters, the endpoints are labelled so that `ρ_i ≤ ρ_j`.
+  Convention: where it matters, the endpoints are labelled so that `d_i ≤ d_j`.
 -/
 module
 
@@ -25,7 +25,7 @@ variable {G : SimpleGraph V} [DecidableRel G.Adj] {d : V → V → ℝ} {i j : V
 
 /-! ### Vertex covers of the cross-edge graph -/
 
-/-- `K` meets every cross edge of `(i, j)`, that is, `K` is a vertex cover of `B_{ij}`. -/
+/-- `K` meets every cross edge of `(i, j)`, that is, `K` is a vertex cover of `H_{ij}`. -/
 def CoversCross (G : SimpleGraph V) [DecidableRel G.Adj] (i j : V) (K : Finset V) : Prop :=
   ∀ x ∈ uniq G i j, ∀ y ∈ uniq G j i, G.Adj x y → x ∈ K ∨ y ∈ K
 
@@ -33,7 +33,7 @@ def CoversCross (G : SimpleGraph V) [DecidableRel G.Adj] (i j : V) (K : Finset V
 def crossNbr (G : SimpleGraph V) [DecidableRel G.Adj] (i j : V) (S : Finset V) : Finset V :=
   (uniq G j i).filter fun y => ∃ x ∈ S, G.Adj x y
 
-/-- The deficiency `|S| − |N(S)|` of a set `S` in `B_{ij}`. -/
+/-- The deficiency `|S| − |N(S)|` of a set `S` in `H_{ij}`. -/
 def deficiency (G : SimpleGraph V) [DecidableRel G.Adj] (i j : V) (S : Finset V) : ℤ :=
   (S.card : ℤ) - ((crossNbr G i j S).card : ℤ)
 
@@ -178,8 +178,8 @@ lemma card_le_matchNum_add {δ : ℕ} (f : {x // x ∈ uniq G i j} → V ⊕ Fin
   rw [Finset.card_attach] at h1
   omega
 
-/-- **König's theorem** for the cross-edge graph: some vertex cover of `B_{ij}` has at most
-`𝔪(i, j)` vertices. Derived from Hall's theorem by adding `δ` dummy vertices, where `δ` is the
+/-- **König's theorem** for the cross-edge graph: some vertex cover of `H_{ij}` has at most
+`M_{ij}` vertices. Derived from Hall's theorem by adding `δ` dummy vertices, where `δ` is the
 largest deficiency `|S| − |N(S)|` of a set `S ⊆ U_i`. -/
 theorem exists_cover_le_matchNum (i j : V) :
     ∃ K : Finset V, CoversCross G i j K ∧
@@ -227,7 +227,7 @@ theorem exists_cover_le_matchNum (i j : V) :
     have h3 := Finset.card_sdiff_add_card_eq_card hSX
     omega
 
-/-! ### Lemma 3.6: `𝔠₄ ≤ 2σ` -/
+/-! ### Lemma 3.6: `□_{ij} ≤ 2σ_{ij}` -/
 
 /-- The cross edges of `(i, j)`, as pairs `(x, y)` with `x ∈ U_i` and `y ∈ U_j`. -/
 def crossPairs (G : SimpleGraph V) [DecidableRel G.Adj] (i j : V) : Finset (V × V) :=
@@ -258,7 +258,7 @@ lemma card_xi_swap_le_crossPairs : (xi G j i).card ≤ (crossPairs G i j).card :
           ⟨(x, y), mem_crossPairs.2 ⟨⟨hxU, hyU⟩, hyx.symm⟩, rfl⟩
     _ ≤ (crossPairs G i j).card := Finset.card_image_le
 
-/-- Every vertex covers at most `ϖ_max` cross edges. -/
+/-- Every vertex covers at most `γ_max` cross edges. -/
 lemma crossPairs_card_le_cover {K : Finset V} (hK : CoversCross G i j K) :
     (crossPairs G i j).card
       ≤ (((uniq G i j).filter (· ∈ K)).card + ((uniq G j i).filter (· ∈ K)).card)
@@ -305,7 +305,7 @@ lemma crossPairs_card_le_cover {K : Finset V} (hK : CoversCross G i j K) :
         add_le_add (Finset.sum_le_sum hA) (Finset.sum_le_sum hB)
     _ = _ := by rw [Finset.sum_const, Finset.sum_const, smul_eq_mul, smul_eq_mul, add_mul]
 
-/-- **Lemma 3.6**: `𝔠₄(i, j) ≤ 2σ_{ij}` on every edge. -/
+/-- **Lemma 3.6**: `□_{ij} ≤ 2σ_{ij}` on every edge. -/
 theorem C4_le_two_matchStat (hij : G.Adj i j) : C4 G i j ≤ 2 * matchStat G i j := by
   classical
   have hb := ρmax_pos (G := G) hij
@@ -334,7 +334,7 @@ theorem C4_le_two_matchStat (hij : G.Adj i j) : C4 G i j ≤ 2 * matchStat G i j
     rw [e]
     exact hXi'
 
-/-- The first coordinates of a cross matching lie in `ξ_i`, so `𝔪(i, j) ≤ |ξ_i|`. -/
+/-- The first coordinates of a cross matching lie in `ξ_i`, so `M_{ij} ≤ |ξ_i|`. -/
 lemma matchNum_le_xi : matchNum G i j ≤ (xi G i j).card := by
   obtain ⟨M, hM, hcard⟩ := exists_max_matching (G := G) i j
   rw [← hcard]
@@ -374,7 +374,7 @@ noncomputable def coverPot (G : SimpleGraph V) [DecidableRel G.Adj] (i j : V) (K
     (x : V) : ℝ :=
   if x = i ∨ (x ∈ uniq G i j ∧ x ∉ K) then 2 else if x ∈ uniq G j i ∧ x ∉ K then 0 else 1
 
-/-- `f_K` is 1-Lipschitz when `K` is a vertex cover of `B_{ij}`. -/
+/-- `f_K` is 1-Lipschitz when `K` is a vertex cover of `H_{ij}`. -/
 lemma coverPot_lip (hd : GraphMetric G d) {K : Finset V} (hK : CoversCross G i j K)
     (x y : V) : coverPot G i j K x - coverPot G i j K y ≤ d x y := by
   by_cases hxy : x = y
@@ -509,7 +509,7 @@ lemma card_filter_xi_right : ((uniq G j i).filter (· ∈ xi G j i)).card = (xi 
   simp only [Finset.mem_filter]
   exact ⟨fun h => h.2, fun h => ⟨xi_subset j i h, h⟩⟩
 
-/-- `(2 + △) w_j + (2 + △) Δ_α + |U_i| w_i = 1`: the lazy measure `m_i` has mass one. -/
+/-- `(2 + t_{ij}) w_j + (2 + t_{ij}) Δ + |U_i| w_i = 1`: the lazy measure `m_i` has mass one. -/
 lemma lazy_identity (hij : G.Adj i j) :
     (2 + (tri G i j : ℝ)) * w G j + (2 + tri G i j) * (w G i - w G j)
       + (uniq G i j).card * w G i = 1 := by
@@ -520,8 +520,8 @@ lemma lazy_identity (hij : G.Adj i j) :
   rw [card_uniq_real hij]
   linear_combination hρw
 
-/-- **Proposition 4.10, the cover bound**: for every vertex cover `K` of `B_{ij}`,
-`𝔠_OR ≤ −1 + 2 m⁰ + (1 + △) Δ_α + |K ∩ U_i| w_i + |K ∩ U_j| w_j`, with `m⁰ = (2 + △) w_j`. -/
+/-- **Proposition 4.10, the cover bound**: for every vertex cover `K` of `H_{ij}`,
+`κ_OR ≤ −1 + 2(2 + t_{ij}) w_j + (1 + t_{ij}) Δ + |K ∩ U_i| w_i + |K ∩ U_j| w_j`. -/
 theorem lazy_envelope_cover (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j)
     {K : Finset V} (hK : CoversCross G i j K) :
     cOR G d i j ≤ -1 + 2 * ((2 + tri G i j) * w G j) + (1 + tri G i j) * (w G i - w G j)

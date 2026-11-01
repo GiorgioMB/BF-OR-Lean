@@ -20,7 +20,7 @@ variable {G : SimpleGraph V} [DecidableRel G.Adj] {d : V → V → ℝ} {i j : V
 /-! ### Appendix B -/
 
 /-- The bound of Bhattacharya and Mukherjee (2015, Thm 5.1), with their matching number
-between the non-common neighbourhoods written as `min{|U_i| + 1, |U_j| + 1, 𝔪 + 2}`
+between the non-common neighbourhoods written as `min{|U_i| + 1, |U_j| + 1, M_{ij} + 2}`
 (Remark `rem:bm-comparison`). -/
 noncomputable def LBM (G : SimpleGraph V) [DecidableRel G.Adj] (i j : V) : ℝ :=
   let M : ℝ := min (min (((uniq G i j).card : ℝ) + 1) (((uniq G j i).card : ℝ) + 1))
@@ -31,8 +31,8 @@ section bmCore
 
 variable {a b t m : ℝ}
 
-/-- Algebraic core of Appendix B, with `a = ρ_min`, `b = ρ_max`, `t = △`, `m = 𝔪`, and the
-integrality alternative `m < |U_min|` or `m = |U_min| = a − 1 − t`. -/
+/-- Algebraic core of Appendix B, with `a = min(d_i, d_j)`, `b = max(d_i, d_j)`, `t = t_{ij}`,
+`m = M_{ij}`, and the integrality alternative `m < |U_min|` or `m = |U_min| = a − 1 − t`. -/
 lemma bm_core (ha : 1 ≤ a) (hab : a ≤ b) (ht : 0 ≤ t) (hm : 0 ≤ m)
     (hint : m + 1 ≤ a - 1 - t ∨ m = a - 1 - t) :
     t / b - 2 * (1 - (min (a - t) (m + 2) + t) / b)
@@ -150,7 +150,7 @@ lemma LBM_Lsq_reduce (hij : G.Adj i j) :
       (Nat.cast_nonneg _ : (0 : ℝ) ≤ tri G i j)])
       (by linarith [(Nat.cast_nonneg _ : (0 : ℝ) ≤ (uniq G j i).card),
       (Nat.cast_nonneg _ : (0 : ℝ) ≤ tri G i j)])
-  · -- integrality: `𝔪 < |U_min|` or `𝔪 = |U_min|`
+  · -- integrality: `M_{ij} < |U_min|` or `M_{ij} = |U_min|`
     have hu : (ρmin G i j) - 1 - tri G i j
         = ((min (uniq G i j).card (uniq G j i).card : ℕ) : ℝ) := by
       unfold ρmin; rw [hρi, hρj]; push_cast
@@ -196,8 +196,8 @@ theorem LBM_eq_Lsq_iff (hij : G.Adj i j) : LBM G i j = Lsq (G := G) i j ↔ ρ G
 
 /-! ### Appendix C: the reverse direction -/
 
-/-- **OR → BF, via the triangle-free mixing transfer and Topping et al.** For `ρ_i ≥ ρ_j`,
-`𝔠_OR ≤ ϑ` implies `𝔠_BF ≤ (ϑ + Δ(α)(1 − 2/ρ_max))/(1 − α_max)`. -/
+/-- **OR → BF, via the triangle-free mixing transfer and Topping et al.** For `d_i ≥ d_j`,
+`κ_OR ≤ ϑ` implies `κ_BF ≤ (ϑ + Δ (1 − 2/b)) (a + 1)/a`. -/
 theorem or_to_bf_mixing (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.Adj i j)
     (hle : ρ G j ≤ ρ G i) {ϑ : ℝ} (h : cOR G d i j ≤ ϑ) :
     cBF G i j ≤ (ϑ + (w G j - w G i) * (1 - 2 / ρ G i)) / (1 - w G j) := by
@@ -214,13 +214,13 @@ theorem or_to_bf_mixing (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G
   nlinarith [mul_le_mul_of_nonneg_left hq (by linarith : (0 : ℝ) ≤ w G j - w G i),
     mul_le_mul_of_nonneg_left htop (by linarith : (0 : ℝ) ≤ 1 - w G j), h, hmix]
 
-/-- `L^lazy = L⁰ + c_△ △ + 2𝔪/(ρ_max + 1)`, with `c_△ = 1/(ρ_min + 1) + 2/(ρ_max + 1)`. -/
+/-- `L^lazy = L⁰ + λ₁ T t + 2m/(b + 1)`, with `λ₁ T = 1/(a + 1) + 2/(b + 1)`. -/
 lemma Llazy_affine (a b t m : ℝ) :
     Llazy a b t m = L0 a b + (1 / (a + 1) + 2 / (b + 1)) * t + 2 * m / (b + 1) := by
   unfold Llazy L0; ring
 
-/-- **OR → BF, elementary (from the lazy quadrangle bound).** For `2 ≤ ρ_i ≤ ρ_j`,
-`𝔠_OR ≤ ϑ` caps the triangle count and hence `𝔠_BF`. -/
+/-- **OR → BF, elementary (from the lazy quadrangle bound).** For `2 ≤ d_i ≤ d_j`,
+`κ_OR ≤ ϑ` caps the triangle count and hence `κ_BF`. -/
 theorem or_to_bf_elementary (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j)
     (h2 : 2 ≤ ρ G i) {ϑ : ℝ} (h : cOR G d i j ≤ ϑ) :
     cBF G i j ≤ bfS G i j + bfT G i j * min (ρ G i - 1)
@@ -244,7 +244,7 @@ theorem or_to_bf_elementary (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G
   nlinarith [mul_le_mul_of_nonneg_left (le_min (tri_le hij) ht) hT.le]
 
 /-- **OR → BF, lower direction (from the zero-cost cap of the envelope).** For
-`2 ≤ ρ_i ≤ ρ_j`, `𝔠_OR ≥ ϑ` forces `△ ≥ ϑ(ρ_max + 1) − 2`, hence a lower bound on BF. -/
+`2 ≤ d_i ≤ d_j`, `κ_OR ≥ ϑ` forces `t_{ij} ≥ ϑ(b + 1) − 2`, hence a lower bound on BF. -/
 theorem or_to_bf_lower (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.Adj i j)
     (hle : ρ G i ≤ ρ G j) (h2 : 2 ≤ ρ G i) {ϑ : ℝ} (h : ϑ ≤ cOR G d i j) :
     bfS G i j + bfT G i j * max (ϑ * (ρ G j + 1) - 2) 0 ≤ cBF G i j := by
@@ -268,7 +268,7 @@ theorem or_to_bf_lower (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.
 /-! ### Appendix C: the coverage envelope and the remaining reverse bounds -/
 
 /-- The coverage envelope `Θ_ij(t)` of Proposition `prop:coverage-envelope-monotone`
-(for `ρ_i ≤ ρ_j`). -/
+(for `d_i ≤ d_j`). -/
 noncomputable def Theta (G : SimpleGraph V) [DecidableRel G.Adj] (i j : V) (t : ℝ) : ℝ :=
   min ((2 + t) * w G j)
     (-1 + 2 * ((2 + t) * w G j) + (w G i - w G j) + min (t * (w G i - w G j)) ((ρ G j - 1 - t) * w G j)
@@ -315,8 +315,8 @@ theorem coverage_envelope (hd : GraphMetric G d) (cited : CitedFacts G d) (hij :
   refine henv.trans (min_le_min le_rfl ?_)
   linarith [hcaps]
 
-/-- **Corollary `cor:OR-to-BF-lower`.** If `𝔠_OR ≥ ϑ` and `Θ_ij(t) < ϑ` for every integer
-`t < t₀`, then `△ ≥ t₀` and `𝔠_BF ≥ 𝔖 + 𝔗 t₀`. -/
+/-- **Corollary `cor:OR-to-BF-lower`.** If `κ_OR ≥ ϑ` and `Θ_ij(t) < ϑ` for every integer
+`t < t₀`, then `t_{ij} ≥ t₀` and `κ_BF ≥ S + T t₀`. -/
 theorem or_to_bf_lower_env (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.Adj i j)
     (hle : ρ G i ≤ ρ G j) (h2 : 2 ≤ ρ G i) {ϑ : ℝ} (h : ϑ ≤ cOR G d i j) {t₀ : ℕ}
     (ht₀ : ∀ t : ℕ, t < t₀ → Theta G i j t < ϑ) :
@@ -334,9 +334,9 @@ theorem or_to_bf_lower_env (hd : GraphMetric G d) (cited : CitedFacts G d) (hij 
   have ht : (t₀ : ℝ) ≤ tri G i j := by exact_mod_cast htri
   nlinarith [mul_le_mul_of_nonneg_left ht hT.le, C4_nonneg (G := G) hij]
 
-/-- **Corollary `cor:or-to-bf`, first term of `𝔰`.** For `ρ_i ≥ ρ_j`, inverting the two affine
-pieces of `Λ_ij` (via `mixing_dominates`) gives
-`𝔠_BF ≤ min{(ϑ + Δ)/(1 − α_min), (ϑ + Δ)/(1 − α_max)} = (ϑ + Δ)/(1 − α̌(ϑ))`. -/
+/-- **Corollary `cor:or-to-bf`, the bound from inverting `Λ_ij`.** For `d_i ≥ d_j`, inverting
+the two affine pieces of `Λ_ij` (via `mixing_dominates`) gives
+`κ_BF ≤ min{(ϑ + Δ)(b + 1)/b, (ϑ + Δ)(a + 1)/a}`. -/
 theorem or_to_bf_old (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.Adj i j)
     (hle : ρ G j ≤ ρ G i) {ϑ : ℝ} (h : cOR G d i j ≤ ϑ) :
     cBF G i j ≤ min ((ϑ + (w G j - w G i)) / (1 - w G i)) ((ϑ + (w G j - w G i)) / (1 - w G j)) := by

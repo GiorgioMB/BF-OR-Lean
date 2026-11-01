@@ -1,6 +1,7 @@
 /-
   Real-number lemmas used by the main results. Nothing here mentions graphs:
-  `a = ρ_min`, `b = ρ_max`, `t = △(i,j)`, `m = 𝔪(i,j)`, `s = 𝔪/ρ_max`.
+  `a = min(d_i, d_j)`, `b = max(d_i, d_j)`, `t = t_{ij}`, `m = M_{ij}`, `s = σ_{ij} = M_{ij}/b`.
+  `bS` and `bT` are `S` and `T` of the paper, `kappa1` and `kappa2` its slopes `λ₁` and `λ₂`.
 -/
 module
 
@@ -25,7 +26,7 @@ noncomputable def bT (a b : ℝ) : ℝ := 2 / b + 1 / a
 noncomputable def kappa1 (a b : ℝ) : ℝ := (1 / (a + 1) + 2 / (b + 1)) / bT a b
 noncomputable def kappa2 (b : ℝ) : ℝ := b / (b + 1)
 
-/-- The unclipped piece `𝔖 + 𝔗 t + 2 s` (`= 𝔷_max − A − B`). -/
+/-- The unclipped piece `S + T t + 2 s` (`= t/b − A − B`). -/
 noncomputable def piece3 (a b t s : ℝ) : ℝ := bS a b + bT a b * t + 2 * s
 
 /-- The elementary lower modulus (Theorem `thm:bf-lower-elementary`), for `a ≥ 2`. -/
@@ -65,7 +66,7 @@ lemma kappa1_nonneg (ha : 0 < a) (hb : 0 < b) : 0 ≤ kappa1 a b := by
   exact div_nonneg (add_nonneg (div_nonneg zero_le_one (by linarith))
     (div_nonneg zero_le_two (by linarith))) hT.le
 
-/-- `κ₁ ≤ κ₂`, i.e. triangles are the cheapest way to explain a BF value. -/
+/-- `λ₁ ≤ λ₂`, i.e. triangles are the cheapest way to explain a BF value. -/
 lemma kappa1_le_kappa2 (ha : 0 < a) (hab : a ≤ b) : kappa1 a b ≤ kappa2 b := by
   have hb : 0 < b := lt_of_lt_of_le ha hab
   have hT := bT_pos ha hb

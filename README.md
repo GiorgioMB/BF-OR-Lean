@@ -40,7 +40,7 @@ theorem bf_interval_paper (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i
     phiInt (ρ G i) (ρ G j) (cBF G i j) ≤ cOR G d i j ∧ cOR G d i j ≤ psiInt G i j (cBF G i j)
 ```
 
-Here `phiInt` is the lower end `φ^ℤ` of Corollary 5.8, which refines the lower modulus `phiAff a b ζ = L0 a b + kappa1 a b * max (ζ - bS a b) 0` of Theorem 5.4 (`phiInt_ge_phiAff`) through the integrality of the triangle count, and `psiInt` is the upper modulus of Theorem 5.7: the maximum of the two-piece envelope `psiTwo` over the integer triangle counts `0, 1, …, ⌊△_max⌋`. Both depend only on the BF value and the two degrees.
+Here `phiInt` is the lower end `φ^ℤ` of Corollary 5.8, which refines the lower modulus `phiAff a b ζ = L0 a b + kappa1 a b * max (ζ - bS a b) 0` of Theorem 5.4 (`phiInt_ge_phiAff`) through the integrality of the triangle count, and `psiInt` is the upper modulus of Theorem 5.7: the maximum of the two-piece envelope `psiTwo` over the integer triangle counts `0, 1, …, t_max(ζ)`. Both depend only on the BF value and the two degrees.
 
 The statements in the form of the paper are collected in `OllivierBF/Paper.lean` and `OllivierBF/Cover.lean`, which derive them from the building blocks in the other files.
 
@@ -70,7 +70,7 @@ Numbering follows the current version of the manuscript (its Appendix E has the 
 | Corollary C.1 (lower bound on BF) | `or_to_bf_lower_paper`; `coverage_bound`, `coverage_bound_eq` for (C.1) | `Paper` | none |
 | Corollary C.2 (upper bound on BF) | `or_to_bf_upper_paper` | `Paper` | none |
 
-The lower ends come from explicit couplings (`W1_le_cost`) and the upper ends of Proposition 4.10 from explicit 1-Lipschitz potentials (`cost_ge_potential`, `coverPot`): for every vertex cover `K` of the cross-edge graph, `lazy_envelope_cover` bounds `𝔠_OR` by the potential that is `2` on `{i} ∪ (U_i \ K)`, `0` on `U_j \ K`, and `1` elsewhere. The covers `ξ_j` and a König cover with `𝔪(i, j)` vertices give `m^UU = min{𝔪 w_i, |ξ_j| w_j}`.
+The lower ends come from explicit couplings (`W1_le_cost`) and the upper ends of Proposition 4.10 from explicit 1-Lipschitz potentials (`cost_ge_potential`, `coverPot`): for every vertex cover `K` of the cross-edge graph, `lazy_envelope_cover` bounds `κ_OR` by the potential that is `2` on `{i} ∪ (U_i \ K)`, `0` on `U_j \ K`, and `1` elsewhere. The covers `ξ_j` and a König cover with `M_{ij}` vertices give `m^UU = min{M_{ij} w_i, |ξ_j| w_j}`.
 
 Several building blocks in the other files state longer or weaker forms from an earlier version of the paper, and `Paper.lean` derives the current statements from them. `phiElem` has a second slope on thresholds that no edge attains, `psiHat` and `Theta` keep terms that are never active, and `psiUp` maximizes over the whole interval of triangle counts rather than over integers. The theorems stated through them (`bf_lower`, `bf_upper`, `bf_interval`, `sharpened_interval`, `lazy_envelope`, `coverage_envelope`, `or_to_bf_lower_env`, `or_to_bf_lower`, `or_to_bf_old`, and `or_to_bf_mixing`) are superseded by those of `Paper.lean`, and only they use the structure `CitedFacts` below.
 
@@ -78,7 +78,7 @@ Several building blocks in the other files state longer or weaker forms from an 
 
 | Hypothesis | Statement in Lean | Source | Used by |
 |---|---|---|---|
-| `BourneFact` | `𝔠_{OR-p} = (1 − p) 𝔠_LLY` at `p = 1/(ρ_max + 1)` | [Bourne, Cushing, Liu, Münch, and Peyerimhoff (2018)](https://arxiv.org/abs/1704.04398), Theorems 1.1 and 5.5 | Proposition 4.1 and Corollary 4.2 |
+| `BourneFact` | `κ_p = (1 − p) κ_LLY` at `p = 1/(b + 1)` | [Bourne, Cushing, Liu, Münch, and Peyerimhoff (2018)](https://arxiv.org/abs/1704.04398), Theorems 1.1 and 5.5 | Proposition 4.1 and Corollary 4.2 |
 
 A theorem that needs it takes `hB : BourneFact G d` as an argument, so its statement is an implication from the cited result. Lean checks the implication; the agreement with the published source is checked by hand.
 
@@ -87,13 +87,13 @@ A theorem that needs it takes `hB : BourneFact G d` as an argument, so its state
 - **Graphs.** `G : SimpleGraph V` on a finite type `V`. Connectedness is needed only to show that the shortest-path distance satisfies `GraphMetric`.
 - **Distance.** The theorems hold for any `d : V → V → ℝ` with `GraphMetric G d`, which records the facts the proofs use: `d` vanishes on the diagonal, equals 1 on edges, is at least 1 between distinct vertices and at least 2 between distinct non-adjacent ones, is symmetric, and satisfies the triangle inequality. `graphMetric_dist` shows that the shortest-path distance of a connected graph qualifies.
 - **Transport.** `W1 d μ ν` is the infimum of the cost over couplings. Upper bounds come from explicit couplings (`W1_le_cost`) and lower bounds from bounds valid for every coupling (`le_W1`); the existence of optimal couplings is never used.
-- **Curvatures** (`Curvature.lean`). `mLazy u` is the uniform measure on the closed neighbourhood of `u` and `mp p u` the measure with idleness `p`. `cOR`, `cOR0`, and `cORp` are the lazy, non-lazy, and idleness-`p` OR curvatures, `cLLY` is the left limit at `p = 1` of `cORp p / (1 − p)`, and `cBF` is Balanced Forman curvature as in Definition 3.2 of the paper. `matchNum` is the matching number of the cross-edge graph.
+- **Curvatures** (`Curvature.lean`). `mLazy u` is the uniform measure on the closed neighbourhood of `u` and `mp p u` the measure with idleness `p`. `cOR`, `cOR0`, and `cORp` are the lazy, non-lazy, and idleness-`p` OR curvatures `κ_OR`, `κ_0`, and `κ_p`, `cLLY` is the left limit `κ_LLY` at `p = 1` of `cORp p / (1 − p)`, and `cBF` is Balanced Forman curvature `κ_BF` as in Definition 3.2 of the paper. `matchNum` is the matching number `M_{ij}` of the cross-edge graph `H_{ij}`, `ρ G u` is the degree `d_u` of the paper (in Lean, `d` is the metric), and `kappa1` and `kappa2` are the slopes `λ₁` and `λ₂`.
 - **Endpoint labels.** All statements of `Paper.lean` label the endpoints so that `ρ G i ≤ ρ G j`, as the paper does. The building blocks of the mixing transfer in `Bounds.lean` (`cLLY_le_q`, `mixing_transfer`, `mixing_dominates`, `mixing_triangle_free`) use `ρ G j ≤ ρ G i`; `Paper.lean` restates them through the symmetry lemmas `cOR_comm` and `cLLY_comm`.
 
 ## Not formalized
 
 - The exactness statements of Theorems 4.3, 4.7, and 5.4 and Corollary 5.8.
-- Regularity and computation: the continuity, convexity, and piecewise linearity of the lower modulus, the location of the maximizers of `Ψ̂` in Theorem 5.7, and the `O(1)` evaluation in Corollary 5.8.
+- Regularity and computation: the continuity, convexity, and piecewise linearity of the lower modulus, the location of the maximizers of `Ψ` in Theorem 5.7, and the `O(1)` evaluation in Corollary 5.8.
 - Proposition 4.8 (the envelope for arbitrary idleness) and the comparison of `U^lazy` with `U^env` in Proposition 4.10.
 - Parts (ii) and (iii) of Proposition 5.1.
 - The closed form of the Bhattacharya–Mukherjee matching number in Remark 4.4. `LBM` is defined through it rather than from their definition.

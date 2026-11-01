@@ -1,5 +1,7 @@
 /-
-  Measures and curvatures.
+  Measures and curvatures. `cOR`, `cOR0`, `cORp p`, `cLLY` and `cBF` are `κ_OR`, `κ_0`, `κ_p`,
+  `κ_LLY` and `κ_BF` of the paper; `bfS`, `bfT`, `C4` and `matchStat` are `S`, `T`, `□_{ij}`
+  and `σ_{ij}`, and `varpi` is `γ_max`.
 -/
 module
 
@@ -20,7 +22,7 @@ variable (G : SimpleGraph V) [DecidableRel G.Adj]
 noncomputable def mp (p : ℝ) (u : V) : V → ℝ := fun k =>
   if k = u then p else if G.Adj u k then (1 - p) / ρ G u else 0
 
-/-- Lazy weight `w_u = 1/(ρ_u + 1)`. -/
+/-- Lazy weight `w_u = 1/(d_u + 1)`. -/
 noncomputable def w (u : V) : ℝ := 1 / (ρ G u + 1)
 
 /-- Lazy measure (Definition `def:lazy-rw`): uniform on the closed neighbourhood. -/
@@ -31,16 +33,16 @@ def dirac (u : V) : V → ℝ := fun k => if k = u then 1 else 0
 
 variable (d : V → V → ℝ)
 
-/-- `𝔠_{OR-p}`. -/
+/-- `κ_p`, the OR curvature at uniform idleness `p`. -/
 noncomputable def cORp (p : ℝ) (i j : V) : ℝ := 1 - W1 d (mp G p i) (mp G p j)
 
-/-- Lazy OR curvature `𝔠_OR`. -/
+/-- Lazy OR curvature `κ_OR`. -/
 noncomputable def cOR (i j : V) : ℝ := 1 - W1 d (mLazy G i) (mLazy G j)
 
-/-- Non-lazy OR curvature `𝔠_{OR-0}`. -/
+/-- Non-lazy OR curvature `κ_0`. -/
 noncomputable def cOR0 (i j : V) : ℝ := cORp G d 0 i j
 
-/-- LLY curvature, as the left limit at `p = 1` of `𝔠_{OR-p}/(1 − p)`. -/
+/-- LLY curvature, as the left limit at `p = 1` of `κ_p/(1 − p)`. -/
 noncomputable def cLLY (i j : V) : ℝ :=
   Filter.limUnder (nhdsWithin (1 : ℝ) (Set.Iio 1)) (fun p => cORp G d p i j / (1 - p))
 
@@ -49,11 +51,11 @@ noncomputable def cLLY (i j : V) : ℝ :=
 noncomputable def ρmax (i j : V) : ℝ := max (ρ G i) (ρ G j)
 noncomputable def ρmin (i j : V) : ℝ := min (ρ G i) (ρ G j)
 
-/-- `𝔖 = 2/ρ_i + 2/ρ_j − 2`. -/
+/-- `S = 2/d_i + 2/d_j − 2`. -/
 noncomputable def bfS (i j : V) : ℝ := 2 / ρ G i + 2 / ρ G j - 2
-/-- `𝔗 = 2/ρ_max + 1/ρ_min`. -/
+/-- `T = 2/b + 1/a`. -/
 noncomputable def bfT (i j : V) : ℝ := 2 / ρmax G i j + 1 / ρmin G i j
-/-- 4-cycle term `𝔠_4 = Ξ/(ϖ_max ρ_max)` (zero if `ϖ_max = 0`). -/
+/-- 4-cycle term `□_{ij} = Ξ/(γ_max b)` (zero if `γ_max = 0`). -/
 noncomputable def C4 (i j : V) : ℝ :=
   if varpi G i j = 0 then 0 else (Xi G i j : ℝ) / ((varpi G i j : ℝ) * ρmax G i j)
 
@@ -61,7 +63,7 @@ noncomputable def C4 (i j : V) : ℝ :=
 noncomputable def cBF (i j : V) : ℝ :=
   if ρmin G i j ≤ 1 then 0 else bfS G i j + bfT G i j * tri G i j + C4 G i j
 
-/-- Matching statistic `𝒮 = 𝔪/ρ_max`. -/
+/-- Matching statistic `σ_{ij} = M_{ij}/b`. -/
 noncomputable def matchStat (i j : V) : ℝ := (matchNum G i j : ℝ) / ρmax G i j
 
 /-! ### Cited results (hypotheses, not axioms)
@@ -69,19 +71,19 @@ noncomputable def matchStat (i j : V) : ℝ := (matchNum G i j : ℝ) / ρmax G 
 Every theorem that needs one of these takes `CitedFacts G d` as an argument. -/
 
 structure CitedFacts : Prop where
-  /-- Bourne et al. (2018), Thm 1.1 and Thm 5.5: `𝔠_{OR-p} = (1 − p) 𝔠_LLY` at
-  `p₀ = 1/(ρ_max + 1)`. -/
+  /-- Bourne et al. (2018), Thm 1.1 and Thm 5.5: `κ_p = (1 − p) κ_LLY` at
+  `p₀ = 1/(b + 1)`. -/
   bourne : ∀ i j, G.Adj i j →
     cORp G d (1 / (ρmax G i j + 1)) i j = (1 - 1 / (ρmax G i j + 1)) * cLLY G d i j
-  /-- Topping et al. (2022), Thm 2: `𝔠_BF ≤ 𝔠_LLY`. -/
+  /-- Topping et al. (2022), Thm 2: `κ_BF ≤ κ_LLY`. -/
   topping : ∀ i j, G.Adj i j → cBF G i j ≤ cLLY G d i j
-  /-- Topping et al. (2022), Lemma 11, in the form `𝔠_4 ≤ 2 𝒮`. -/
+  /-- Topping et al. (2022), Lemma 11, in the form `□_{ij} ≤ 2σ_{ij}`. -/
   topping11 : ∀ i j, G.Adj i j → 2 ≤ ρmin G i j → C4 G i j ≤ 2 * matchStat G i j
   /-- Villani (2003), Cor. 1.16: saturating the diagonal never increases the cost. -/
   saturate : ∀ μ ν : V → ℝ, ∀ π, IsCoupling μ ν π →
     ∃ π', IsCoupling μ ν π' ∧ (∀ k, π' k k = min (μ k) (ν k)) ∧ cost d π' ≤ cost d π
 
-/-- Lemma 3.3 of the paper (Bourne et al. 2018, Theorems 1.1 and 5.5) at `p = 1/(ρ_max + 1)`:
+/-- Lemma 3.3 of the paper (Bourne et al. 2018, Theorems 1.1 and 5.5) at `p = 1/(b + 1)`:
 the only published result that the statements of `Paper.lean` take as a hypothesis, and only
 in Proposition 4.1 and Corollary 4.2. It is the field `bourne` of `CitedFacts`. -/
 def BourneFact : Prop := ∀ i j, G.Adj i j →
@@ -99,7 +101,7 @@ lemma w_pos (u : V) : 0 < w G u := by
   have : (0 : ℝ) ≤ ρ G u := by simp only [ρ]; positivity
   simp only [w]; positivity
 
-/-- For an edge endpoint, `(1 − w_u)/ρ_u = w_u`. -/
+/-- For an edge endpoint, `(1 − w_u)/d_u = w_u`. -/
 lemma lazy_nbr_weight {u v : V} (huv : G.Adj u v) : (1 - w G u) / ρ G u = w G u := by
   have h := ρ_pos huv
   have h1 : ρ G u + 1 ≠ 0 := by linarith
@@ -162,7 +164,7 @@ lemma exists_coupling_lazy {i j : V} (hij : G.Adj i j) :
 
 /-! ### One-sided residuals (Lemma `lem:one-sided`)
 
-For `ρ_i ≤ ρ_j` (so `w_j ≤ w_i`), all residual demand of `m_j` over `m_i` sits on `U_j`. -/
+For `d_i ≤ d_j` (so `w_j ≤ w_i`), all residual demand of `m_j` over `m_i` sits on `U_j`. -/
 
 /-- The overlap set `{i, j} ∪ C`. -/
 def overlap (i j : V) : Finset V := insert i (insert j (common G i j))

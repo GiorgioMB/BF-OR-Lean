@@ -1,6 +1,6 @@
 /-
   The BF interval (Section 5) and the sharpened interval.
-  Convention throughout: `ρ_i ≤ ρ_j`, so `a = ρ_i = ρ_min`, `b = ρ_j = ρ_max`.
+  Convention throughout: `d_i ≤ d_j`, so `a = d_i` and `b = d_j`.
 -/
 module
 
@@ -39,7 +39,7 @@ lemma C4_nonneg (hij : G.Adj i j) : 0 ≤ C4 G i j := by
   · exact le_rfl
   · exact div_nonneg (Nat.cast_nonneg _) (mul_nonneg (Nat.cast_nonneg _) (ρmax_pos hij).le)
 
-/-- `𝔠_BF ≤ piece₃` with `s = 𝔪/ρ_max` (uses Topping et al., Lemma 11). -/
+/-- `κ_BF ≤ piece₃` with `s = σ_{ij} = M_{ij}/b` (uses Topping et al., Lemma 11). -/
 lemma cBF_le_piece3 (cited : CitedFacts G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j)
     (h2 : 2 ≤ ρ G i) :
     cBF G i j ≤ piece3 (ρ G i) (ρ G j) (tri G i j) (matchNum G i j / ρ G j) := by
@@ -53,7 +53,7 @@ lemma cBF_le_piece3 (cited : CitedFacts G d) (hij : G.Adj i j) (hle : ρ G i ≤
 
 /-! ### Theorem `thm:bf-lower-elementary` -/
 
-/-- **Theorem `thm:bf-lower-elementary` (lower modulus), case `ρ_min ≥ 2`.** -/
+/-- **Theorem `thm:bf-lower-elementary` (lower modulus), case `a ≥ 2`.** -/
 theorem bf_lower (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.Adj i j)
     (hle : ρ G i ≤ ρ G j) (h2 : 2 ≤ ρ G i) {ζ : ℝ} (hζ : ζ ≤ cBF G i j) :
     phiElem (ρ G i) (ρ G j) ζ ≤ cOR G d i j := by
@@ -65,7 +65,7 @@ theorem bf_lower (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.Adj i 
   exact phiElem_le (by linarith) hle (Nat.cast_nonneg _) (tri_le hij)
     (div_nonneg (Nat.cast_nonneg _) hρj.le) (hζ.trans (cBF_le_piece3 cited hij hle h2))
 
-/-- **Theorem `thm:bf-lower-elementary`, leaf case `ρ_min = 1`:** the bound is the exact
+/-- **Theorem `thm:bf-lower-elementary`, leaf case `a = 1`:** the bound is the exact
 tree value `L⁰`. -/
 theorem bf_lower_leaf (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j)
     (h1 : ρ G i = 1) : L0 (ρ G i) (ρ G j) ≤ cOR G d i j := by
@@ -137,7 +137,8 @@ theorem phiElem_ge_lamTF {a b : ℝ} (ha : 1 ≤ a) (hab : a ≤ b) (ζ : ℝ) :
 
 /-! ### Theorem `thm:BF-to-OR-lazy` (upper modulus) -/
 
-/-- The concave envelope `Ψ̂(t)` for the lazy measure (`eq:widehat-Psi-tight`). -/
+/-- A concave envelope for the lazy measure (`eq:widehat-Psi-tight`), used in the proofs of this
+file; the two-piece envelope `Ψ` of Theorem 5.7 is the one in `Paper.lean`. -/
 noncomputable def psiHat (G : SimpleGraph V) [DecidableRel G.Adj] (i j : V) (ζ t : ℝ) : ℝ :=
   let wi := w G i; let wj := w G j; let δ := wi - wj
   let bud := max (ζ - bfS G i j) 0
@@ -148,15 +149,15 @@ noncomputable def psiHat (G : SimpleGraph V) [DecidableRel G.Adj] (i j : V) (ζ 
   let D := (ρ G i + ρ G j - 2 - 2 * t) / sig
   min ((2 + t) * wj) (-1 + 2 * ((2 + t) * wj) + δ + min (t * δ) Aj + min (min Ai Aj) (min B D))
 
-/-- `△_max(ζ)`. -/
+/-- `min{a − 1, β(ζ)/T}`, the real bound on the triangle count; its floor is `t_max(ζ)`. -/
 noncomputable def triMax (G : SimpleGraph V) [DecidableRel G.Adj] (i j : V) (ζ : ℝ) : ℝ :=
   min (ρ G i - 1) (max (ζ - bfS G i j) 0 / bfT G i j)
 
-/-- The upper modulus `ψ(ζ) = max_{t ∈ [0, △_max]} Ψ̂(t)`. -/
+/-- The upper modulus over real `t`: the supremum of `psiHat` over `[0, triMax]`. -/
 noncomputable def psiUp (G : SimpleGraph V) [DecidableRel G.Adj] (i j : V) (ζ : ℝ) : ℝ :=
   sSup (psiHat G i j ζ '' Set.Icc 0 (triMax G i j ζ))
 
-/-- If `ϖ_max = 0` there are no cross edges, so `Ξ = 0`. -/
+/-- If `γ_max = 0` there are no cross edges, so `Ξ = 0`. -/
 lemma Xi_eq_zero_of_varpi (h : varpi G i j = 0) : Xi G i j = 0 := by
   have h1 : (uniq G i j).sup (fun k => boxClose G k i j) = 0 := by
     have := le_max_left ((uniq G i j).sup fun k => boxClose G k i j)
@@ -184,7 +185,7 @@ lemma Xi_eq_zero_of_varpi (h : varpi G i j = 0) : Xi G i j = 0 := by
     omega
   unfold Xi; rw [e1, e2]
 
-/-- `Ξ ≤ ♯*(b − 𝔗 t)` under the BF hypothesis (from `𝔠_4 ≥ Ξ/♯*`). -/
+/-- `Ξ ≤ b(b − 1)(β(ζ) − T t_{ij})` under the BF hypothesis (from `□_{ij} ≥ Ξ/(b(b − 1))`). -/
 lemma Xi_le_budget (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) (h2 : 2 ≤ ρ G i) {ζ : ℝ}
     (hζ : cBF G i j ≤ ζ) :
     (Xi G i j : ℝ) ≤ ρ G j * (ρ G j - 1) * (max (ζ - bfS G i j) 0 - bfT G i j * tri G i j) := by
@@ -206,7 +207,7 @@ lemma Xi_le_budget (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) (h2 : 2 ≤ ρ G 
       mul_pos (by linarith) (ρmax_pos hij)
     have hC : C4 G i j = (Xi G i j : ℝ) / ((varpi G i j : ℝ) * ρmax G i j) := by
       unfold C4; rw [ite_eq_right hv]
-    -- `Ξ = 𝔠₄ ϖ ρ_max ≤ 𝔠₄ ♯*`
+    -- `Ξ = □_{ij} γ_max b ≤ □_{ij} b(b − 1)`
     have hXi : (Xi G i j : ℝ) = C4 G i j * ((varpi G i j : ℝ) * ρmax G i j) := by
       rw [hC, div_mul_cancel₀ _ hden.ne']
     have hC0 : 0 ≤ C4 G i j := C4_nonneg hij
@@ -223,7 +224,7 @@ lemma Xi_le_budget (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) (h2 : 2 ≤ ρ G 
           mul_le_mul_of_nonneg_right hbud hsho
       _ = _ := by ring
 
-/-- `min(|ξ_i| w_i, |ξ_j| w_j) ≤ min{A_i, A_j, B, D}` at `t = △(i,j)`: from `ξ_u ⊆ U_u`,
+/-- `min(|ξ_i| w_i, |ξ_j| w_j) ≤ min{A_i, A_j, B, D}` at `t = t_{ij}`: from `ξ_u ⊆ U_u`,
 the harmonic bound `min{x a, y b} ≤ (x + y)/(1/a + 1/b)`, `Xi_le_budget`, and `Xi_le`. -/
 lemma xi_caps_le (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) (h2 : 2 ≤ ρ G i) {ζ : ℝ}
     (hζ : cBF G i j ≤ ζ) :
@@ -273,7 +274,7 @@ lemma psiHat_le_bound (_hij : G.Adj i j) (ζ t : ℝ) (ht : t ≤ ρ G i) :
   simp only
   exact (min_le_left _ _).trans (by nlinarith [w_pos (G := G) j])
 
-/-- **Theorem `thm:BF-to-OR-lazy` (upper modulus), case `ρ_min ≥ 2`.** -/
+/-- **Theorem `thm:BF-to-OR-lazy` (upper modulus), case `a ≥ 2`.** -/
 theorem bf_upper (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.Adj i j)
     (hle : ρ G i ≤ ρ G j) (h2 : 2 ≤ ρ G i) {ζ : ℝ} (hζ : cBF G i j ≤ ζ) :
     cOR G d i j ≤ psiUp G i j ζ := by
@@ -282,7 +283,7 @@ theorem bf_upper (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.Adj i 
   have hτ : ((uniq G j i).card : ℝ) * w G j = (ρ G j - 1 - tri G i j) * w G j := by
     rw [card_uniq_real hij.symm, tri_comm]
   rw [hτ] at henv
-  -- `t = △(i,j)` is admissible
+  -- `t = t_{ij}` is admissible
   have hmin : ¬ ρmin G i j ≤ 1 := by rw [ρmin_eq hle]; linarith
   have hT : 0 < bfT G i j := bfT_pos' hij
   have hbf : bfS G i j + bfT G i j * tri G i j + C4 G i j ≤ ζ := by
@@ -340,9 +341,9 @@ theorem bf_interval (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.Adj
     phiElem (ρ G i) (ρ G j) (cBF G i j) ≤ cOR G d i j ∧ cOR G d i j ≤ psiUp G i j (cBF G i j) :=
   ⟨bf_lower hd cited hij hle h2 le_rfl, bf_upper hd cited hij hle h2 le_rfl⟩
 
-/-- **Proposition `sharpened-interval`.** `φ(𝔠_BF) ≤ L^lazy ≤ 𝔠_OR ≤ Ψ̂(△) ≤ ψ(𝔠_BF)`: the lower
-end of the sharpened interval lies inside the BF interval, and the envelope evaluated at the
-true triangle count `△` bounds `𝔠_OR` from above and lies below the upper modulus. -/
+/-- **Proposition `sharpened-interval`.** `φ(κ_BF) ≤ L^lazy ≤ κ_OR ≤ psiHat(t_{ij}) ≤ ψ(κ_BF)`: the
+lower end of the sharpened interval lies inside the BF interval, and the envelope evaluated at
+the true triangle count `t_{ij}` bounds `κ_OR` from above and lies below the upper modulus. -/
 theorem sharpened_interval (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.Adj i j)
     (hle : ρ G i ≤ ρ G j) (h2 : 2 ≤ ρ G i) :
     phiElem (ρ G i) (ρ G j) (cBF G i j) ≤ Llazy (ρ G i) (ρ G j) (tri G i j) (matchNum G i j) ∧
@@ -355,7 +356,7 @@ theorem sharpened_interval (hd : GraphMetric G d) (cited : CitedFacts G d) (hij 
   · rw [Llazy_eq hρi hρj]
     exact phiElem_le (by linarith) hle (Nat.cast_nonneg _) (tri_le hij)
       (div_nonneg (Nat.cast_nonneg _) hρj.le) (cBF_le_piece3 cited hij hle h2)
-  · -- the envelope evaluated at the true `△`, as in `bf_upper`
+  · -- the envelope evaluated at the true `t_{ij}`, as in `bf_upper`
     have henv := lazy_envelope hd cited hij hle
     have hcaps := xi_caps_le hij hle h2 (le_refl (cBF G i j))
     have hτ : ((uniq G j i).card : ℝ) * w G j = (ρ G j - 1 - tri G i j) * w G j := by
