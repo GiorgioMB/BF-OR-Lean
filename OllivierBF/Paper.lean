@@ -5,7 +5,9 @@
   The other files prove the building blocks. Several of them follow an earlier version of the
   paper and state longer or weaker forms (`phiElem`, `psiHat`, `psiUp`, `Theta`, and
   `lazy_envelope` with two caps that are never active); this file derives the current
-  statements from them and from `Cover.lean`.
+  statements from them and from `Cover.lean`. The lift `lamOld` (`Λ_ij`) of that version is no
+  longer used by the paper; it survives as a stepping stone, because `lamTF` is defined through
+  it and `lamTF_closed` gives the closed form of Corollary 4.2.
 
   Only Proposition 4.1 and Corollary 4.2 take a published result as a hypothesis: Lemma 3.3 of
   the paper (Bourne et al., `BourneFact`). Every other statement here, including the BF interval
@@ -89,7 +91,9 @@ lemma phiAff_virtual (ha : 0 < a) (hb : 0 < b) (ζ : ℝ) :
   rw [mul_assoc (kappa1 a b), hc]
   ring
 
-/-- **Proposition 5.5, comparison with the lifts**: `Λ ≤ Λ^tf ≤ φ` on the attainable range. -/
+/-- **Proposition 5.5, comparison with the lifts**: `Λ^tf ≤ φ` on the attainable range (the second
+conjunct). The first conjunct, `lamOld ≤ lamTF`, compares with the lift `Λ_ij` of an earlier
+version of the paper, which the current paper no longer states. -/
 theorem phiAff_ge_lamTF (ha : 1 ≤ a) (hab : a ≤ b) {ζ : ℝ}
     (hζ : ζ ≤ bS a b + bT a b * (a - 1)) :
     lamOld (1 / (b + 1)) (1 / (a + 1)) (1 / (a + 1) - 1 / (b + 1)) ζ

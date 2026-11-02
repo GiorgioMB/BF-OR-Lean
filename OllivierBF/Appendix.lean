@@ -334,9 +334,10 @@ theorem or_to_bf_lower_env (hd : GraphMetric G d) (cited : CitedFacts G d) (hij 
   have ht : (t₀ : ℝ) ≤ tri G i j := by exact_mod_cast htri
   nlinarith [mul_le_mul_of_nonneg_left ht hT.le, C4_nonneg (G := G) hij]
 
-/-- **Corollary `cor:or-to-bf`, the bound from inverting `Λ_ij`.** For `d_i ≥ d_j`, inverting
-the two affine pieces of `Λ_ij` (via `mixing_dominates`) gives
-`κ_BF ≤ min{(ϑ + Δ)(b + 1)/b, (ϑ + Δ)(a + 1)/a}`. -/
+/-- The bound of an earlier version of Corollary `cor:or-to-bf`, from inverting the two affine
+pieces of the lift `Λ_ij` (`lamOld`, via `mixing_dominates`): for `d_i ≥ d_j`,
+`κ_BF ≤ min{(ϑ + Δ)(b + 1)/b, (ϑ + Δ)(a + 1)/a}`. The current paper no longer uses it, and nothing
+in the formalization depends on it; it is kept for reference. -/
 theorem or_to_bf_old (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.Adj i j)
     (hle : ρ G j ≤ ρ G i) {ϑ : ℝ} (h : cOR G d i j ≤ ϑ) :
     cBF G i j ≤ min ((ϑ + (w G j - w G i)) / (1 - w G i)) ((ϑ + (w G j - w G i)) / (1 - w G j)) := by

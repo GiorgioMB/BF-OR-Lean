@@ -34,14 +34,20 @@ noncomputable def phiElem (a b ζ : ℝ) : ℝ :=
   let z := max (ζ - bS a b) 0
   L0 a b + kappa1 a b * min z (bT a b * (a - 1)) + kappa2 b * max (z - bT a b * (a - 1)) 0
 
-/-- The current lift `Λ_ij` (Corollary `cor:symm-bound` (ii)), with `amin ≤ amax`. -/
+/-- The lift `Λ_ij` of an earlier version of the paper, with `amin ≤ amax`: the bound through the
+triangle inequality, with the idleness `amin` for `L ≥ 0` and `amax` otherwise. The current paper
+no longer uses it. It remains as a stepping stone: `lamTF` (`Λ^tf`) is defined as its maximum with
+`lamMix` at `q = 2/b`, and `lamTF_closed` turns that maximum into the closed form of
+Corollary 4.2. -/
 noncomputable def lamOld (amin amax Δ L : ℝ) : ℝ :=
   if 0 ≤ L then (1 - amin) * L - Δ else (1 - amax) * L - Δ
 
 /-- The mixing lift `Λ^mix` (Proposition `prop:mixing-transfer`). -/
 noncomputable def lamMix (amax Δ q L : ℝ) : ℝ := (1 - amax) * L - Δ * (1 - q)
 
-/-- The triangle-free version `Λ^tf` (Corollary `cor:mixing-triangle-free`). -/
+/-- The triangle-free version `Λ^tf` (Corollary `cor:mixing-triangle-free`), defined through the
+earlier lift `lamOld`; `lamTF_closed` gives the closed form `a/(a+1) L − Δ (1 − max{L, 2/b})` that
+the paper states. -/
 noncomputable def lamTF (amin amax Δ b L : ℝ) : ℝ := max (lamOld amin amax Δ L) (lamMix amax Δ (2 / b) L)
 
 section lemmas
@@ -165,6 +171,7 @@ lemma Llazy_sub_lamMix (ha : 0 < a) (hb : 0 < b) :
   have h3 : b ≠ 0 := hb.ne'
   unfold Llazy lamMix piece3 bS bT; field_simp; ring
 
+/-- `lamOld` is nondecreasing; a step in the monotonicity of `lamTF`. -/
 lemma lamOld_mono {amin amax Δ : ℝ} (h1 : amin ≤ amax) (h2 : amax ≤ 1) {x y : ℝ} (hxy : x ≤ y) :
     lamOld amin amax Δ x ≤ lamOld amin amax Δ y := by
   unfold lamOld
@@ -178,6 +185,7 @@ lemma lamMix_mono {amax Δ q : ℝ} (h : amax ≤ 1) {x y : ℝ} (hxy : x ≤ y)
     lamMix amax Δ q x ≤ lamMix amax Δ q y := by
   unfold lamMix; nlinarith
 
+/-- The two affine pieces of `lamOld`; a step in unfolding `lamTF`. -/
 lemma lamOld_eq_max {amin amax Δ L : ℝ} (h1 : amin ≤ amax) :
     lamOld amin amax Δ L = max ((1 - amin) * L - Δ) ((1 - amax) * L - Δ) := by
   unfold lamOld
@@ -185,7 +193,8 @@ lemma lamOld_eq_max {amin amax Δ L : ℝ} (h1 : amin ≤ amax) :
   · rw [max_eq_left]; nlinarith
   · rw [max_eq_right]; nlinarith
 
-/-- `L^lazy` dominates the current lift of `piece₃`, for `a ≤ b` and `t ≤ a − 1`. -/
+/-- `L^lazy` dominates `lamOld` at `piece₃`, for `a ≤ b` and `t ≤ a − 1`; a step towards
+`lamTF_piece3_le`. -/
 theorem lamOld_piece3_le (ha : 1 ≤ a) (hab : a ≤ b) (ht0 : 0 ≤ t) (hta : t ≤ a - 1) (hm : 0 ≤ m) :
     lamOld (1 / (b + 1)) (1 / (a + 1)) (1 / (a + 1) - 1 / (b + 1)) (piece3 a b t (m / b))
       ≤ Llazy a b t m := by

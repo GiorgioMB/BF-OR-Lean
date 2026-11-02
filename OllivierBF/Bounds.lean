@@ -1140,8 +1140,9 @@ theorem mixing_transfer (hd : GraphMetric G d) (hB : BourneFact G d) (hij : G.Ad
   unfold cOR lamMix
   nlinarith [hmix, hdirθ, hA, hB, hC]
 
-/-- The mixing lift dominates the current lift on every valid input
-(last sentence of Proposition `prop:mixing-transfer`). -/
+/-- The mixing lift `Λ^mix` dominates the lift `Λ_ij` (`lamOld`) of an earlier version of the paper
+on every valid input. The current paper no longer states this comparison; it is kept for
+`or_to_bf_old`. -/
 theorem mixing_dominates (hd : GraphMetric G d) (hB : BourneFact G d) (hij : G.Adj i j)
     (hle : ρ G j ≤ ρ G i) {L : ℝ} (hL : L ≤ cLLY G d i j) :
     lamOld (w G i) (w G j) (w G j - w G i) L ≤
