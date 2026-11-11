@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Installs the toolchain pinned in lean-toolchain, fetches the Mathlib cache, and runs `lake build`.
+      - uses: leanprover/lean-action@v1
+
+      # Fails if any main theorem rests on `sorry` or on anything beyond Lean's three standard axioms.
+      - name: Check axioms
+        shell: bash
+        run: |
+          lake env lean scripts/CheckAxioms.lean | tee axioms.txt
+          python3 scripts/check_axioms.py axioms.txt scripts/CheckAxioms.lean

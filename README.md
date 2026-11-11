@@ -1,4 +1,7 @@
 # BF-OR-Lean
+
+[![CI](https://github.com/GiorgioMB/BF-OR-Lean/actions/workflows/ci.yml/badge.svg)](https://github.com/GiorgioMB/BF-OR-Lean/actions/workflows/ci.yml)
+
 A Lean 4 formalization of the main results of
 
 > Giorgio Micaletto and Tebe Nigrelli. *From Proxy to Certificate: Two-Sided Ollivier--Ricci Bounds from Balanced Forman Curvature.* 2026.
@@ -6,7 +9,7 @@ A Lean 4 formalization of the main results of
 For every edge of a finite simple graph, the paper shows that the Balanced Forman (BF) curvature of the edge and the degrees of its two endpoints certify a two-sided interval for its lazy Ollivier–Ricci (OR) curvature, without solving an optimal transport problem. This repository proves that interval in Lean, together with the transport bounds it is built from, its sharpened form, the comparison with the bound of [Bhattacharya and Mukherjee](https://arxiv.org/abs/1306.6741), and the reverse direction (what an OR value certifies about BF).
 
 - **Builds** with Lean `v4.36.0-rc1` and Mathlib commit [`cf5dd31`](https://github.com/leanprover-community/mathlib4/commit/cf5dd317652efe9d9d17252014a4cd442bf86469), both pinned in this repository.
-- **Contains no `sorry`** and **declares no axioms**. Every file uses the Lean module system (`module`, `public import`, `@[expose] public section`).
+- **Contains no `sorry`** and **declares no axioms**, which CI checks on every push: it builds the project and fails if any main theorem of `Paper.lean` or `Screening.lean` rests on anything beyond Lean's standard axioms (`scripts/CheckAxioms.lean`). Every file uses the Lean module system (`module`, `public import`, `@[expose] public section`).
 - **One published result**, Lemma 3.3 of the paper ([Bourne et al.](https://arxiv.org/abs/1704.04398)), is not re-proved. It enters as the explicit hypothesis `BourneFact` of Proposition 4.1 and Corollary 4.2 only ([below](#cited-results)). Every other statement is proved from the definitions; König's theorem for the cross-edge graph is derived from Hall's theorem in Mathlib (`OllivierBF/Cover.lean`).
 
 The experiments of the paper are in a separate repository, [Curvature-Transfer-Code](https://github.com/GiorgioMB/Curvature-Transfer-Code).
@@ -29,7 +32,7 @@ To see what a theorem rests on, add to any file that imports `OllivierBF`:
 #print axioms OllivierBF.two_hop_interval_paper
 ```
 
-The output should list only Lean's standard axioms (`propext`, `Classical.choice`, `Quot.sound`). The cited result does not appear there as it is 0 hypotheses, not axioms.
+The output should list only Lean's standard axioms (`propext`, `Classical.choice`, `Quot.sound`). The cited result does not appear there, because it enters as a hypothesis, not as an axiom.
 
 ## The main theorem
 
