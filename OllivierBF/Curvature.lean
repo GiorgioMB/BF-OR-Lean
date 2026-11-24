@@ -66,26 +66,10 @@ noncomputable def cBF (i j : V) : ℝ :=
 /-- Matching statistic `σ_{ij} = M_{ij}/b`. -/
 noncomputable def matchStat (i j : V) : ℝ := (matchNum G i j : ℝ) / ρmax G i j
 
-/-! ### Cited results (hypotheses, not axioms)
+/-! ### The cited result (a hypothesis, not an axiom) -/
 
-Every theorem that needs one of these takes `CitedFacts G d` as an argument. -/
-
-structure CitedFacts : Prop where
-  /-- Bourne et al. (2018), Thm 1.1 and Thm 5.5: `κ_p = (1 − p) κ_LLY` at
-  `p₀ = 1/(b + 1)`. -/
-  bourne : ∀ i j, G.Adj i j →
-    cORp G d (1 / (ρmax G i j + 1)) i j = (1 - 1 / (ρmax G i j + 1)) * cLLY G d i j
-  /-- Topping et al. (2022), Thm 2: `κ_BF ≤ κ_LLY`. -/
-  topping : ∀ i j, G.Adj i j → cBF G i j ≤ cLLY G d i j
-  /-- Topping et al. (2022), Lemma 11, in the form `□_{ij} ≤ 2σ_{ij}`. -/
-  topping11 : ∀ i j, G.Adj i j → 2 ≤ ρmin G i j → C4 G i j ≤ 2 * matchStat G i j
-  /-- Villani (2003), Cor. 1.16: saturating the diagonal never increases the cost. -/
-  saturate : ∀ μ ν : V → ℝ, ∀ π, IsCoupling μ ν π →
-    ∃ π', IsCoupling μ ν π' ∧ (∀ k, π' k k = min (μ k) (ν k)) ∧ cost d π' ≤ cost d π
-
-/-- Lemma 3.3 of the paper (Bourne et al. 2018, Theorems 1.1 and 5.5) at `p = 1/(b + 1)`:
-the only published result that the statements of `Paper.lean` take as a hypothesis, and only
-in Proposition 4.1 and Corollary 4.2. It is the field `bourne` of `CitedFacts`. -/
+/-- Lemma 3.3 of the paper (Bourne et al. 2018, Theorems 1.1 and 5.5) at `p = 1/(b + 1)`: the only
+published result that a statement takes as a hypothesis, and only Proposition 4.1. -/
 def BourneFact : Prop := ∀ i j, G.Adj i j →
   cORp G d (1 / (ρmax G i j + 1)) i j = (1 - 1 / (ρmax G i j + 1)) * cLLY G d i j
 

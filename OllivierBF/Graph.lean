@@ -146,17 +146,6 @@ lemma tri_le {u v : V} (huv : G.Adj u v) : (tri G u v : ℝ) ≤ ρ G u - 1 := b
   have h0 : (0 : ℝ) ≤ (uniq G u v).card := by positivity
   linarith
 
-/-- **Lemma `xi_bound`**: `Ξ ≤ d_u + d_v − 2 − 2t_{uv}`. -/
-theorem Xi_le {u v : V} (huv : G.Adj u v) :
-    (Xi G u v : ℝ) ≤ ρ G u + ρ G v - 2 - 2 * tri G u v := by
-  have h1 : ((xi G u v).card : ℝ) ≤ (uniq G u v).card := by
-    exact_mod_cast Finset.card_le_card (xi_subset u v)
-  have h2 : ((xi G v u).card : ℝ) ≤ (uniq G v u).card := by
-    exact_mod_cast Finset.card_le_card (xi_subset v u)
-  rw [card_uniq_real huv] at h1
-  rw [card_uniq_real huv.symm, tri_comm] at h2
-  simp only [Xi]; push_cast; linarith
-
 /-- A degree in the cross-edge graph is at most the size of the opposite unique neighbourhood. -/
 lemma boxClose_le (k u v : V) : boxClose G k u v ≤ (uniq G v u).card :=
   Finset.card_le_card Finset.inter_subset_right

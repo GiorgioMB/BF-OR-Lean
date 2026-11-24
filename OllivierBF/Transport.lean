@@ -52,9 +52,6 @@ theorem le_W1 {b : ℝ} (hne : ∃ π, IsCoupling μ ν π)
   obtain ⟨π₀, h₀⟩ := hne
   exact le_csInf ⟨_, π₀, h₀, rfl⟩ (by rintro _ ⟨π, hπ, rfl⟩; exact h π hπ)
 
-lemma W1_nonneg (hd : ∀ x y, 0 ≤ d x y) (hne : ∃ π, IsCoupling μ ν π) : 0 ≤ W1 d μ ν :=
-  le_W1 hne fun _ hπ => cost_nonneg hd hπ.1
-
 /-- Transposed couplings. -/
 lemma IsCoupling.swap (h : IsCoupling μ ν π) : IsCoupling ν μ (fun x y => π y x) :=
   ⟨fun x y => h.1 y x, fun x => h.2.2 x, fun y => h.2.1 y⟩

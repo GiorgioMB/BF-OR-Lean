@@ -1,8 +1,6 @@
 /-
-  Main transport bounds on OR curvature.
-
-  Status: no `sorry`s; every coupling is constructed explicitly. See README.md for the
-  build and for the published results that enter as hypotheses (`CitedFacts`).
+  The transport bounds on OR curvature: Theorems 4.3 and 4.7, Proposition 5.1 (i), and the mixing
+  transfer of Proposition 4.1. Every coupling is constructed explicitly.
 -/
 module
 
@@ -25,27 +23,6 @@ variable {G : SimpleGraph V} [DecidableRel G.Adj] {d : V → V → ℝ}
 lemma IsCoupling.congr {μ ν μ' ν' : V → ℝ} {π : V → V → ℝ} (h : IsCoupling μ ν π)
     (hμ : ∀ x, μ x = μ' x) (hν : ∀ y, ν y = ν' y) : IsCoupling μ' ν' π :=
   ⟨h.1, fun x => (h.2.1 x).trans (hμ x), fun y => (h.2.2 y).trans (hν y)⟩
-
-/-- Every coupling costs at least `2 · (off-diagonal mass) − (mass moved along edges)`. -/
-lemma cost_ge_two_offdiag_sub_unit (hd : GraphMetric G d) {μ ν : V → ℝ} {π : V → V → ℝ}
-    (h : IsCoupling μ ν π) :
-    2 * ∑ x, (μ x - π x x) - ∑ x, ∑ y, (if G.Adj x y then π x y else 0) ≤ cost d π := by
-  have hrow : ∀ x, μ x - π x x = ∑ y, (if x = y then 0 else π x y) := by
-    intro x
-    rw [← h.2.1 x, ← Finset.add_sum_erase _ (fun y => π x y) (Finset.mem_univ x)]
-    rw [← Finset.add_sum_erase _ (fun y => if x = y then 0 else π x y) (Finset.mem_univ x)]
-    simp only [ite_true, zero_add, add_sub_cancel_left]
-    refine Finset.sum_congr rfl fun y hy => ?_
-    rw [ite_eq_right (fun e => (Finset.mem_erase.1 hy).1 e.symm)]
-  simp only [hrow, Finset.mul_sum, ← Finset.sum_sub_distrib]
-  unfold cost
-  refine Finset.sum_le_sum fun x _ => Finset.sum_le_sum fun y _ => ?_
-  by_cases hxy : x = y
-  · subst hxy; simp [SimpleGraph.irrefl, hd.self]
-  · by_cases ha : G.Adj x y
-    · rw [ite_eq_right hxy, ite_eq_left ha, hd.adj ha]; linarith
-    · rw [ite_eq_right hxy, ite_eq_right ha]
-      nlinarith [hd.two_le hxy ha, h.1 x y]
 
 /-! ### Theorem `thm:lazy-quadrangle` -/
 
@@ -333,231 +310,6 @@ theorem lazy_quadrangle (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i �
   linarith
 
 end lazyQuadrangle
-
-/-! ### Proposition `prop:lazy-envelope-tight` -/
-
-section envelope
-
-variable {i j : V}
-
-/-- For a coupling of `m_i, m_j` that saturates the diagonal, with `d_i ≤ d_j`, the mass moved
-along edges is at most `τ_{ij}` and at most
-`Δ + min(t_{ij} Δ, τ_{ij}) + min(|ξ_i| w_i, |ξ_j| w_j)`: every off-diagonal unit ends in `U_j`
-(`lazy_resid_j`), and a unit-distance move into `U_j` starts at `j`, at a common neighbour, or in
-`ξ_i` along a cross edge, never at `i`. -/
-lemma unit_mass_le (_hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j)
-    {π : V → V → ℝ} (hπ : IsCoupling (mLazy G i) (mLazy G j) π)
-    (hsat : ∀ k, π k k = min (mLazy G i k) (mLazy G j k)) :
-    ∑ x, ∑ y, (if G.Adj x y then π x y else 0) ≤
-      min ((uniq G j i).card * w G j)
-        ((w G i - w G j) + min (tri G i j * (w G i - w G j)) ((uniq G j i).card * w G j)
-          + min ((xi G i j).card * w G i) ((xi G j i).card * w G j)) := by
-  classical
-  have hwj := w_pos (G := G) j
-  -- off-diagonal row and column sums are the residuals
-  have hrow : ∀ x, ∑ y ∈ univ.erase x, π x y = mLazy G i x - min (mLazy G i x) (mLazy G j x) := by
-    intro x
-    have h := Finset.add_sum_erase _ (fun y => π x y) (Finset.mem_univ x)
-    have h' : π x x + ∑ y ∈ univ.erase x, π x y = ∑ y, π x y := h
-    rw [hπ.2.1 x, hsat x] at h'; linarith
-  have hcol : ∀ y, ∑ x ∈ univ.erase y, π x y = mLazy G j y - min (mLazy G i y) (mLazy G j y) := by
-    intro y
-    have h := Finset.add_sum_erase _ (fun x => π x y) (Finset.mem_univ y)
-    have h' : π y y + ∑ x ∈ univ.erase y, π x y = ∑ x, π x y := h
-    rw [hπ.2.2 y, hsat y] at h'; linarith
-  -- (a) off-diagonal mass only enters `U_j`
-  have hzero_col : ∀ x y, x ≠ y → y ∉ uniq G j i → π x y = 0 := by
-    intro x y hxy hy
-    have hc := hcol y
-    rw [lazy_resid_j hij hle y, ite_eq_right hy] at hc
-    exact (Finset.sum_eq_zero_iff_of_nonneg fun x _ => hπ.1 x y).1 hc x
-      (Finset.mem_erase.2 ⟨hxy, Finset.mem_univ x⟩)
-  -- (b) off-diagonal mass only leaves the support of the residual of `m_i`
-  have hzero_row : ∀ x y, x ≠ y → x ∉ overlap (G := G) i j → x ∉ uniq G i j → π x y = 0 := by
-    intro x y hxy hO hU
-    have hr := hrow x
-    rw [lazy_resid_i hij hle x, ite_eq_right hO, ite_eq_right hU, add_zero] at hr
-    exact (Finset.sum_eq_zero_iff_of_nonneg fun y _ => hπ.1 x y).1 hr y
-      (Finset.mem_erase.2 ⟨hxy.symm, Finset.mem_univ y⟩)
-  -- unit-distance mass leaving `x`, and entering `y`
-  set F : V → ℝ := fun x => ∑ y, (if G.Adj x y then π x y else 0) with hF
-  have hF0 : ∀ x, 0 ≤ F x := fun x =>
-    Finset.sum_nonneg fun y _ => by split_ifs <;> first | exact hπ.1 x y | exact le_rfl
-  have hFrow : ∀ x, F x ≤ mLazy G i x - min (mLazy G i x) (mLazy G j x) := by
-    intro x
-    rw [← hrow x, hF]
-    (try dsimp only)
-    rw [← Finset.add_sum_erase _ _ (Finset.mem_univ x), ite_eq_right (SimpleGraph.irrefl G), zero_add]
-    exact Finset.sum_le_sum fun y _ => by split_ifs <;> first | exact le_rfl | exact hπ.1 x y
-  have hFcol : ∀ y, ∑ x, (if G.Adj x y then π x y else 0) ≤
-      mLazy G j y - min (mLazy G i y) (mLazy G j y) := by
-    intro y
-    rw [← hcol y, ← Finset.add_sum_erase _ _ (Finset.mem_univ y), ite_eq_right (SimpleGraph.irrefl G),
-      zero_add]
-    exact Finset.sum_le_sum fun x _ => by split_ifs <;> first | exact le_rfl | exact hπ.1 x y
-  -- the total is `∑ x, F x`
-  -- bound by `τ`
-  have hτ : ∑ x, F x ≤ (uniq G j i).card * w G j := by
-    calc ∑ x, F x = ∑ y, ∑ x, (if G.Adj x y then π x y else 0) := Finset.sum_comm
-      _ ≤ ∑ y, (if y ∈ uniq G j i then w G j else 0) :=
-          Finset.sum_le_sum fun y _ => (hFcol y).trans (le_of_eq (lazy_resid_j hij hle y))
-      _ = (uniq G j i).card * w G j := by
-          rw [Finset.sum_ite_mem, Finset.univ_inter, Finset.sum_const, nsmul_eq_mul]
-  refine le_min hτ ?_
-  -- `F` vanishes outside `{j} ∪ C ∪ U_i`
-  have hFi : F i = 0 := by
-    show ∑ y, (if G.Adj i y then π i y else 0) = 0
-    refine Finset.sum_eq_zero fun y _ => ?_
-    split_ifs with ha
-    · by_cases hy : y ∈ uniq G j i
-      · exact absurd ha (mem_uniq.1 hy).2.2
-      · exact hzero_col i y ha.ne hy
-    · rfl
-  have hFout : ∀ x, x ∉ overlap (G := G) i j → x ∉ uniq G i j → F x = 0 := by
-    intro x hO hUx
-    show ∑ y, (if G.Adj x y then π x y else 0) = 0
-    refine Finset.sum_eq_zero fun y _ => ?_
-    split_ifs with ha
-    · exact hzero_row x y ha.ne hO hUx
-    · rfl
-  have hS : ∑ x, F x = F j + ∑ x ∈ common G i j, F x + ∑ x ∈ uniq G i j, F x := by
-    have hsub : ∀ x, x ∉ insert j (common G i j ∪ uniq G i j) → F x = 0 := by
-      intro x hx
-      simp only [Finset.mem_insert, Finset.mem_union, not_or] at hx
-      by_cases hxi : x = i
-      · rw [hxi]; exact hFi
-      · refine hFout x ?_ hx.2.2
-        simp only [overlap, Finset.mem_insert, not_or]
-        exact ⟨hxi, hx.1, hx.2.1⟩
-    have hdisj : Disjoint (common G i j) (uniq G i j) := by
-      rw [Finset.disjoint_left]
-      intro x hC hU'
-      exact (mem_uniq.1 hU').2.2 (mem_common.1 hC).2
-    have hjn : j ∉ common G i j ∪ uniq G i j := by
-      simp [mem_common, mem_uniq, SimpleGraph.irrefl]
-    rw [← Finset.sum_subset (Finset.subset_univ _) (fun x _ hx => hsub x hx),
-      Finset.sum_insert hjn, Finset.sum_union hdisj, add_assoc]
-  rw [hS]
-  -- the three contributions
-  have hFj : F j ≤ w G i - w G j := by
-    have h := hFrow j
-    rw [lazy_resid_i hij hle j] at h
-    have hjO : j ∈ overlap (G := G) i j := by simp [overlap]
-    have hjU : j ∉ uniq G i j := by simp [mem_uniq]
-    rwa [ite_eq_left hjO, ite_eq_right hjU, add_zero] at h
-  have hFC1 : ∑ x ∈ common G i j, F x ≤ tri G i j * (w G i - w G j) := by
-    calc ∑ x ∈ common G i j, F x ≤ ∑ x ∈ common G i j, (w G i - w G j) := by
-          refine Finset.sum_le_sum fun x hx => ?_
-          have h := hFrow x
-          rw [lazy_resid_i hij hle x] at h
-          have hxO : x ∈ overlap (G := G) i j := by simp [overlap, hx]
-          have hxU : x ∉ uniq G i j := fun h' => (mem_uniq.1 h').2.2 (mem_common.1 hx).2
-          rwa [ite_eq_left hxO, ite_eq_right hxU, add_zero] at h
-      _ = tri G i j * (w G i - w G j) := by simp [Finset.sum_const, tri]; ring
-  have hFC2 : ∑ x ∈ common G i j, F x ≤ (uniq G j i).card * w G j :=
-    (Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _) fun x _ _ => hF0 x).trans hτ
-  have hFU1 : ∑ x ∈ uniq G i j, F x ≤ (xi G i j).card * w G i := by
-    have hvan : ∀ x ∈ uniq G i j, x ∉ xi G i j → F x = 0 := by
-      intro x hx hxi
-      show ∑ y, (if G.Adj x y then π x y else 0) = 0
-      refine Finset.sum_eq_zero fun y _ => ?_
-      split_ifs with ha
-      · by_cases hy : y ∈ uniq G j i
-        · exact absurd (Finset.mem_filter.2 ⟨hx, y, hy, ha⟩) hxi
-        · exact hzero_col x y ha.ne hy
-      · rfl
-    rw [← Finset.sum_subset (xi_subset i j) (fun x hx hxi => hvan x hx hxi)]
-    calc ∑ x ∈ xi G i j, F x ≤ ∑ x ∈ xi G i j, w G i := by
-          refine Finset.sum_le_sum fun x hx => ?_
-          have hxU := xi_subset i j hx
-          have h := hFrow x
-          rw [lazy_resid_i hij hle x] at h
-          have hxO : x ∉ overlap (G := G) i j := by
-            simp only [overlap, Finset.mem_insert, mem_common, not_or]
-            obtain ⟨h1, h2, h3⟩ := mem_uniq.1 hxU
-            exact ⟨fun e => by rw [e] at h2; exact SimpleGraph.irrefl G h2, h1, fun h' => h3 h'.2⟩
-          rwa [ite_eq_right hxO, ite_eq_left hxU, zero_add] at h
-      _ = (xi G i j).card * w G i := by rw [Finset.sum_const, nsmul_eq_mul]
-  have hFU2 : ∑ x ∈ uniq G i j, F x ≤ (xi G j i).card * w G j := by
-    have hswap : ∑ x ∈ uniq G i j, F x
-        = ∑ y, ∑ x ∈ uniq G i j, (if G.Adj x y then π x y else 0) := by
-      rw [hF]; exact Finset.sum_comm
-    rw [hswap]
-    have hvan : ∀ y, y ∉ xi G j i → ∑ x ∈ uniq G i j, (if G.Adj x y then π x y else 0) = 0 := by
-      intro y hy
-      refine Finset.sum_eq_zero fun x hx => ?_
-      split_ifs with ha
-      · by_cases hyU : y ∈ uniq G j i
-        · exact absurd (Finset.mem_filter.2 ⟨hyU, x, hx, ha.symm⟩) hy
-        · exact hzero_col x y ha.ne hyU
-      · rfl
-    rw [← Finset.sum_subset (Finset.subset_univ (xi G j i)) (fun y _ hy => hvan y hy)]
-    calc ∑ y ∈ xi G j i, ∑ x ∈ uniq G i j, (if G.Adj x y then π x y else 0)
-        ≤ ∑ y ∈ xi G j i, w G j := by
-          refine Finset.sum_le_sum fun y hy => ?_
-          have hyU := xi_subset j i hy
-          refine (Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _)
-            fun x _ _ => by split_ifs <;> first | exact hπ.1 x y | exact le_rfl).trans ?_
-          refine (hFcol y).trans (le_of_eq ?_)
-          rw [lazy_resid_j hij hle y, ite_eq_left hyU]
-      _ = (xi G j i).card * w G j := by rw [Finset.sum_const, nsmul_eq_mul]
-  have h1 := le_min hFC1 hFC2
-  have h2 := le_min hFU1 hFU2
-  linarith
-
-/-- **Proposition `prop:lazy-envelope-tight` (lazy transport envelope).** -/
-theorem lazy_envelope (hd : GraphMetric G d) (cited : CitedFacts G d) (hij : G.Adj i j)
-    (hle : ρ G i ≤ ρ G j) :
-    cOR G d i j ≤ min ((2 + tri G i j) * w G j)
-      (-1 + 2 * ((2 + tri G i j) * w G j) + (w G i - w G j)
-        + min (tri G i j * (w G i - w G j)) ((uniq G j i).card * w G j)
-        + min ((xi G i j).card * w G i) ((xi G j i).card * w G j)) := by
-  -- off-diagonal mass of a saturated coupling: `Σ_k (m_i k − min) = |U_j| w_j`
-  have hoff : ∑ k, (mLazy G i k - min (mLazy G i k) (mLazy G j k))
-      = ((uniq G j i).card : ℝ) * w G j := by
-    have hres := Finset.sum_congr rfl (fun k (_ : k ∈ Finset.univ) => lazy_resid_j hij hle k)
-    have hsum : ∑ k, (mLazy G i k - min (mLazy G i k) (mLazy G j k))
-        = ∑ k, (mLazy G j k - min (mLazy G i k) (mLazy G j k)) := by
-      rw [Finset.sum_sub_distrib, Finset.sum_sub_distrib, mLazy_sum hij, mLazy_sum hij.symm]
-    rw [hsum, hres, Finset.sum_ite_mem, Finset.univ_inter, Finset.sum_const, nsmul_eq_mul]
-  -- `|U_j| w_j = 1 − (2 + t_{ij}) w_j`
-  have hτm0 : ((uniq G j i).card : ℝ) * w G j = 1 - (2 + (tri G i j : ℝ)) * w G j := by
-    have hU := card_uniq_real hij.symm
-    have hρj := ρ_pos hij.symm
-    have h1 : ρ G j + 1 ≠ 0 := by linarith
-    rw [hU, tri_comm]
-    simp only [w]; field_simp; ring
-  have hW : max (1 - (2 + (tri G i j : ℝ)) * w G j)
-      (2 - 2 * ((2 + (tri G i j : ℝ)) * w G j) - ((w G i - w G j)
-        + min (tri G i j * (w G i - w G j)) ((uniq G j i).card * w G j)
-        + min ((xi G i j).card * w G i) ((xi G j i).card * w G j)))
-      ≤ W1 d (mLazy G i) (mLazy G j) := by
-    apply le_W1 (exists_coupling_lazy hij)
-    intro π hπ
-    obtain ⟨π', hπ', hsat, hle'⟩ := cited.saturate _ _ π hπ
-    have hlow := cost_ge_two_offdiag_sub_unit hd hπ'
-    have hum := unit_mass_le hd hij hle hπ' hsat
-    have hoff' : ∑ x, (mLazy G i x - π' x x) = ((uniq G j i).card : ℝ) * w G j := by
-      simp only [hsat]; exact hoff
-    rw [hoff'] at hlow
-    have hu1 := (min_le_left _ _).trans' hum
-    have hu2 := (min_le_right _ _).trans' hum
-    refine le_trans (max_le ?_ ?_) hle'
-    · linarith
-    · linarith
-  unfold cOR
-  rw [le_min_iff]
-  constructor
-  · linarith [le_max_left (1 - (2 + (tri G i j : ℝ)) * w G j)
-      (2 - 2 * ((2 + (tri G i j : ℝ)) * w G j) - ((w G i - w G j)
-        + min (tri G i j * (w G i - w G j)) ((uniq G j i).card * w G j)
-        + min ((xi G i j).card * w G i) ((xi G j i).card * w G j)))]
-  · linarith [le_max_right (1 - (2 + (tri G i j : ℝ)) * w G j)
-      (2 - 2 * ((2 + (tri G i j : ℝ)) * w G j) - ((w G i - w G j)
-        + min (tri G i j * (w G i - w G j)) ((uniq G j i).card * w G j)
-        + min ((xi G i j).card * w G i) ((xi G j i).card * w G j)))]
-
-end envelope
 
 /-! ### Theorem `thm:JL-plus-squares` (non-lazy) -/
 
@@ -925,19 +677,6 @@ theorem jl_aug (hd : GraphMetric G d) (hij : G.Adj i j) : Lsq (G := G) i j ≤ c
   have := W1_le_cost hd.nonneg hπ
   unfold cOR0 cORp; linarith
 
-/-- `L^□` as the minimum of its three affine pieces. -/
-lemma Lsq_eq_min (i j : V) (hle : ρmax G i j ≥ ρmin G i j) (hpos : 0 < ρmin G i j) :
-    Lsq (G := G) i j = min (jlZmax (G := G) i j)
-      (min (jlZmax (G := G) i j - (jlK (G := G) i j - jlZmax (G := G) i j - matchStat G i j))
-        (jlZmax (G := G) i j - (jlK (G := G) i j - jlZmax (G := G) i j - matchStat G i j)
-          - (jlK (G := G) i j - jlZmin (G := G) i j - matchStat G i j))) := by
-  unfold Lsq
-  apply neg_pos_parts_eq_min
-  have : jlZmax (G := G) i j ≤ jlZmin (G := G) i j := by
-    unfold jlZmax jlZmin
-    exact div_le_div_of_nonneg_left (by positivity) hpos hle
-  linarith
-
 end jl
 
 /-! ### Proposition `prop:bf-unclipped` (i): BF is the third affine piece -/
@@ -956,7 +695,7 @@ theorem bf_is_third_piece {i j : V} (hij : G.Adj i j) (h2 : ¬ ρmin G i j ≤ 1
   have e' : 2 / ρ G i + 2 / ρ G j = 2 * (1 / ρ G i + 1 / ρ G j) := by ring
   linarith [e, e']
 
-/-! ### Proposition `prop:mixing-transfer` (B1) and its triangle-free corollary -/
+/-! ### Proposition `prop:mixing-transfer` -/
 
 section mixing
 
@@ -1083,7 +822,7 @@ lemma cLLY_le_q (hd : GraphMetric G d) (hB : BourneFact G d) (hij : G.Adj i j)
   rw [le_div_iff₀ hρi]
   nlinarith
 
-/-- **Proposition `prop:mixing-transfer` (B1).** For `d_i ≥ d_j`,
+/-- **Proposition `prop:mixing-transfer`.** For `d_i ≥ d_j`,
 `κ_OR ≥ a/(a + 1) κ_LLY − Δ (1 − q)`. -/
 theorem mixing_transfer (hd : GraphMetric G d) (hB : BourneFact G d) (hij : G.Adj i j)
     (hle : ρ G j ≤ ρ G i) :
@@ -1139,43 +878,6 @@ theorem mixing_transfer (hd : GraphMetric G d) (hB : BourneFact G d) (hij : G.Ad
   have hdirθ := mul_le_mul_of_nonneg_left hdir hθ0
   unfold cOR lamMix
   nlinarith [hmix, hdirθ, hA, hB, hC]
-
-/-- The mixing lift `Λ^mix` dominates the lift `Λ_ij` (`lamOld`) of an earlier version of the paper
-on every valid input. The current paper no longer states this comparison; it is kept for
-`or_to_bf_old`. -/
-theorem mixing_dominates (hd : GraphMetric G d) (hB : BourneFact G d) (hij : G.Adj i j)
-    (hle : ρ G j ≤ ρ G i) {L : ℝ} (hL : L ≤ cLLY G d i j) :
-    lamOld (w G i) (w G j) (w G j - w G i) L ≤
-      lamMix (w G j) (w G j - w G i) ((2 + tri G i j) / ρ G i) L := by
-  have hq := cLLY_le_q hd hB hij hle
-  have hwle : w G i ≤ w G j := w_anti hle
-  have hρi := ρ_pos hij
-  have hq0 : 0 ≤ (2 + tri G i j) / ρ G i :=
-    div_nonneg (by linarith [(Nat.cast_nonneg (tri G i j) : (0 : ℝ) ≤ tri G i j)]) hρi.le
-  unfold lamOld lamMix
-  split_ifs with h
-  · -- `L ≥ 0`: the gain is `Δ (q − L) ≥ 0`
-    nlinarith [mul_le_mul_of_nonneg_left (hL.trans hq) (by linarith : (0 : ℝ) ≤ w G j - w G i)]
-  · -- `L < 0`: the gain is `Δ q ≥ 0`
-    nlinarith [mul_nonneg (by linarith : (0 : ℝ) ≤ w G j - w G i) hq0]
-
-/-- **Corollary `cor:mixing-triangle-free`.** The triangle-free version: the mixing
-transfer with `q` replaced by `2/b`, which needs no triangle count. -/
-theorem mixing_triangle_free (hd : GraphMetric G d) (hB : BourneFact G d) (hij : G.Adj i j)
-    (hle : ρ G j ≤ ρ G i) {L : ℝ} (hL : L ≤ cLLY G d i j) :
-    lamMix (w G j) (w G j - w G i) (2 / ρ G i) L ≤ cOR G d i j := by
-  refine le_trans ?_ (mixing_transfer hd hB hij hle)
-  have hρi := ρ_pos hij
-  have hwle : w G i ≤ w G j := w_anti hle
-  have hwj1 : w G j ≤ 1 := by
-    simp only [w]; rw [div_le_one (by linarith [ρ_pos (G := G) hij.symm])]
-    linarith [ρ_pos (G := G) hij.symm]
-  have hq : 2 / ρ G i ≤ (2 + tri G i j) / ρ G i :=
-    div_le_div_of_nonneg_right (by linarith [(Nat.cast_nonneg (tri G i j) : (0 : ℝ) ≤ tri G i j)])
-      hρi.le
-  unfold lamMix
-  nlinarith [mul_le_mul_of_nonneg_left hL (by linarith : (0 : ℝ) ≤ 1 - w G j),
-    mul_le_mul_of_nonneg_left hq (by linarith : (0 : ℝ) ≤ w G j - w G i)]
 
 end mixing
 

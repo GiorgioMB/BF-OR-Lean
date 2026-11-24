@@ -1,6 +1,7 @@
 /-
-  Proposition 5.1 of the paper (BF as an unclipped Jost–Liu bound), parts (ii) and (iii). Part (i)
-  is `bf_is_third_piece` in `Bounds.lean`.
+  Proposition 5.1 of the paper (BF as an unclipped Jost–Liu bound), parts (ii) and (iii): `L^BF`,
+  the excess `κ_BF − κ_0 ≤ [−A]₊ + [−B]₊`, and `A ≥ B`. Part (i) is `bf_is_third_piece` in
+  `Bounds.lean`.
 
   `bfA` and `bfB` are the BF deficits `A^BF_{ij}` and `B^BF_{ij}`: the arguments `A^□_{ij}` and
   `B^□_{ij}` of the positive parts in `L^□_{ij}` (`Lsq`) with `σ_{ij}` replaced by `□_{ij}/2`.
@@ -85,15 +86,6 @@ theorem bfB_le_bfA (hij : G.Adj i j) : bfB G i j ≤ bfA G i j := by
       (by unfold ρmin ρmax; exact min_le_max)
   have eA : bfA G i j = jlK (G := G) i j - jlZmax (G := G) i j - C4 G i j / 2 := rfl
   have eB : bfB G i j = jlK (G := G) i j - jlZmin (G := G) i j - C4 G i j / 2 := rfl
-  linarith
-
-/-- **Proposition 5.1 (iii)**: for `a ≥ 2`, if `B^BF_{ij} ≥ 0`, then `κ_BF ≤ κ_0`. -/
-theorem bf_le_cOR0_of_bfB_nonneg (hd : GraphMetric G d) (hij : G.Adj i j)
-    (h2 : 2 ≤ ρmin G i j) (hB : 0 ≤ bfB G i j) : cBF G i j ≤ cOR0 G d i j := by
-  have hA : 0 ≤ bfA G i j := hB.trans (bfB_le_bfA hij)
-  have h := bf_excess hd hij h2
-  rw [max_eq_right (show -bfA G i j ≤ 0 by linarith),
-    max_eq_right (show -bfB G i j ≤ 0 by linarith)] at h
   linarith
 
 end OllivierBF

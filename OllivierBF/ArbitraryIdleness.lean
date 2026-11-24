@@ -1,6 +1,5 @@
 /-
-  Proposition B.1 of the paper: the envelope `U^env_{ij}` for arbitrary idleness `α_i, α_j ∈ [0, 1)`,
-  and `U^lazy_{ij} ≤ U^env_{ij}` for the lazy measure.
+  Proposition B.1 of the paper: the envelope `U^env_{ij}` for arbitrary idleness `α_i, α_j ∈ [0, 1)`.
 
   The proof takes a different route from the paper. It uses weak duality (`cost_ge_potential`)
   with two pairs of explicit 1-Lipschitz potentials, one pair for each branch of the minimum that
@@ -384,42 +383,5 @@ theorem envelope_arbitrary_idleness (hd : GraphMetric G d) (hij : G.Adj i j) {α
   · -- branch `m̃^CU = |U_i| w_i + |U_j| w_j`: the pair `commonPot (±1)`
     rw [min_eq_right h]
     linarith
-
-/-- **Proposition B.1, the lazy measure**: with the endpoints labelled so that `d_i ≤ d_j`,
-`U^lazy_{ij} ≤ U^env_{ij}` for `α_u = w_u = 1/(d_u + 1)`. -/
-theorem Ulazy_le_Uenv (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) :
-    Ulazy G i j ≤ Uenv G (w G i) (w G j) i j := by
-  have hwi : nbrW G (w G i) i = w G i := lazy_nbr_weight hij
-  have hwj : nbrW G (w G j) j = w G j := lazy_nbr_weight hij.symm
-  have hw := w_anti (G := G) hle
-  have hwip := w_pos (G := G) i
-  have hwjp := w_pos (G := G) j
-  have key := lazy_identity (G := G) hij
-  have hρw : w G j * ρ G j = 1 - w G j := by
-    have h := lazy_nbr_weight (G := G) hij.symm
-    rw [div_eq_iff (ρ_pos hij.symm).ne'] at h
-    linarith
-  have hUjw : ((uniq G j i).card : ℝ) * w G j = 1 - (2 + tri G i j) * w G j := by
-    rw [card_uniq_real hij.symm, tri_comm j i]
-    linear_combination hρw
-  have hUiw : 0 ≤ ((uniq G i j).card : ℝ) * w G i := mul_nonneg (Nat.cast_nonneg _) hwip.le
-  have hX : tri G i j * (w G i - w G j)
-      ≤ (uniq G i j).card * w G i + (uniq G j i).card * w G j := by
-    linarith
-  have hUU : min (matchNum G i j * w G i) ((xi G j i).card * w G j)
-      ≤ mUUenv G (w G i) (w G j) i j := by
-    have hp1 : 0 < nbrW G (w G i) i := by rw [hwi]; exact hwip
-    have hp2 : 0 < nbrW G (w G j) j := by rw [hwj]; exact hwjp
-    have h1 := min_xi_le_mUUenv hp1 hp2
-    rw [hwi, hwj] at h1
-    have hmx : (matchNum G i j : ℝ) ≤ (xi G i j).card := by exact_mod_cast matchNum_le_xi
-    exact (min_le_min (mul_le_mul_of_nonneg_right hmx hwip.le) le_rfl).trans h1
-  unfold Uenv mCUenv
-  rw [hwi, hwj, min_eq_right hw, min_eq_left hw,
-    max_eq_left (show (0 : ℝ) ≤ w G i - w G j by linarith),
-    max_eq_right (show w G j - w G i ≤ 0 by linarith),
-    abs_of_nonneg (show (0 : ℝ) ≤ w G i - w G j by linarith), min_eq_left hX]
-  unfold Ulazy
-  linarith
 
 end OllivierBF

@@ -4,7 +4,6 @@ import OllivierBF
 
 #print axioms OllivierBF.mixing_transfer_paper
 #print axioms OllivierBF.cLLY_le_q_paper
-#print axioms OllivierBF.mixing_tf_paper
 #print axioms OllivierBF.lazy_envelope_paper
 #print axioms OllivierBF.cBF_le_piece3_paper
 #print axioms OllivierBF.bf_lower_paper

@@ -90,7 +90,7 @@ theorem jl_aug_exact_of_perfect (hd : GraphMetric G d) (hij : G.Adj i j)
 
 /-- **Theorem 4.7, exactness**: on an edge with `a = b` whose cross-edge graph has a perfect
 matching, `Δ = R_{ij} = 0`, so `L^lazy_{ij}` equals the coverage bound `Θ_{ij}` of
-Proposition 4.10, and `κ_OR = L^lazy_{ij}`. -/
+Proposition 4.8, and `κ_OR = L^lazy_{ij}`. -/
 theorem lazy_quadrangle_exact_of_perfect (hd : GraphMetric G d) (hij : G.Adj i j)
     (heq : ρ G i = ρ G j) (hM : matchNum G i j = (uniq G i j).card) :
     cOR G d i j = Llazy (ρ G i) (ρ G j) (tri G i j) (matchNum G i j) := by

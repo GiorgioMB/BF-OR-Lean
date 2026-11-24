@@ -79,7 +79,7 @@ variable {V : Type*} [Fintype V] [DecidableEq V]
 variable {G : SimpleGraph V} [DecidableRel G.Adj] {d : V → V → ℝ}
 
 /-- **Algorithm 1 with the certificates of the paper**: for oriented edges `(i, j)` with
-`d_i ≤ d_j`, the 2-hop interval `[L^lazy_{ij}, U^lazy_{ij}]` (Theorem 4.7 and Proposition 4.10),
+`d_i ≤ d_j`, the 2-hop interval `[L^lazy_{ij}, U^lazy_{ij}]` (Theorem 4.7 and Proposition 4.8),
 any valid second-stage certificate `upPrior`, and the exact lazy OR curvature, the algorithm
 returns exactly the edges with `κ_OR(i, j) < ϑ`. -/
 theorem certifyThenSolve_paper (hd : GraphMetric G d) (E : Finset (V × V))
