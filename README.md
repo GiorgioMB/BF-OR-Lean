@@ -53,7 +53,7 @@ neighbour are at distance at least 3) holds for the shortest-path distance (`thr
 | Proposition 4.2 | `savings_paper`; `W1_eq_W1_resid` (Villani, Corollary 1.16), `cost_eq_three_mass_sub_savings` | `PaperTQ`, `Residual` |
 | Theorem 5.3 (i) | `tq_lower_paper`; `exists_extension` for partial plans | `PaperTQ`, `Residual` |
 | Theorem 5.3 (ii) | `tq_upper_paper` for any bound on the mass along edges; `tq_upper_cover_paper` for vertex covers | `PaperTQ`, `TQ` |
-| Theorem 5.3 (iv), the bound `η'` | `tq_upper_blocks_paper` (componentwise bound) | `PaperTQ`, `TQ` |
+| Theorem 5.3 (iv), the bound `η'` | `tq_upper_blocks_paper`; `adjMass_le_blocks_ij` (the exact bound at `i` and `j`, and the components) | `PaperTQ`, `TQ` |
 | Theorem 5.3, lazy measure | `tq_lazy_paper` | `PaperTQ` |
 | Corollary 5.4 | `idleness_paper`, `idleness_bounds`, `idleness_sign` (hypothesis `BourneLinear`) | `PaperTQ`, `Idleness` |
 | Algorithm 1 | `certifyThenSolve_tq` | `TQ` |

@@ -47,6 +47,21 @@ noncomputable def capS (G : SimpleGraph V) [DecidableRel G.Adj] (μ : V → V �
 noncomputable def capD (G : SimpleGraph V) [DecidableRel G.Adj] (μ : V → V → ℝ) (i j y : V) : ℝ :=
   min (resN μ i j y) (∑ x, if G.Adj x y then resP μ i j x else 0)
 
+/-- `|r(u)| = r₊(u) + r₋(u)`. -/
+noncomputable def resAbs (μ : V → V → ℝ) (i j u : V) : ℝ := resP μ i j u + resN μ i j u
+
+/-- `O_u` of Theorem 5.3 (iv): the residual of the sign opposite to `r(u)` on the neighbours of `u`
+other than `i` and `j`. -/
+noncomputable def oppNbr (G : SimpleGraph V) [DecidableRel G.Adj] (μ : V → V → ℝ) (i j u : V) : ℝ :=
+  (if 0 < resP μ i j u then
+      ∑ y, (if y ∉ ({i, j} : Finset V) ∧ G.Adj u y then resN μ i j y else 0) else 0)
+    + (if 0 < resN μ i j u then
+      ∑ x, (if x ∉ ({i, j} : Finset V) ∧ G.Adj x u then resP μ i j x else 0) else 0)
+
+/-- `F_ij` of Theorem 5.3 (iv): the largest flow along the edge `(i, j)`. -/
+noncomputable def flowIJ (μ : V → V → ℝ) (i j : V) : ℝ :=
+  min (resP μ i j i) (resN μ i j j) + min (resP μ i j j) (resN μ i j i)
+
 variable {G : SimpleGraph V} [DecidableRel G.Adj] {d : V → V → ℝ}
 variable {μ : V → V → ℝ} {i j : V} {ρ : V → V → ℝ}
 
@@ -361,51 +376,16 @@ theorem adjMass_le_cover (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) {K : 
   · rw [ite_eq_right hadj]
     split_ifs <;> linarith
 
-/-- **The componentwise bound.** Remove a set `I` of hubs (in the paper, `I = {i, j}`); if every edge
-between supply and demand outside `I` joins vertices of the same block, then the mass along edges is
-at most the capped flows at `I` plus, block by block, the smaller of the capped supply and the
-capped demand. -/
-theorem adjMass_le_blocks {β : Type*} [DecidableEq β]
+/-- **The edges outside a set `I` of hubs, block by block.** If every edge between supply and demand
+outside `I` joins vertices of the same block, those edges carry at most, block by block, the smaller of
+the capped supply and the capped demand. -/
+lemma outside_le_blocks {β : Type*} [DecidableEq β]
     (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (I : Finset V) (b : V → β)
     (hb : ∀ x y, 0 < resP μ i j x → 0 < resN μ i j y → G.Adj x y → x ∉ I → y ∉ I → b x = b y) :
-    adjMass G ρ ≤ ∑ x ∈ I, capS G μ i j x + ∑ y ∈ I, capD G μ i j y
-      + ∑ l ∈ Finset.univ.image b,
+    ∑ x, ∑ y, (if G.Adj x y ∧ x ∉ I ∧ y ∉ I then ρ x y else 0)
+      ≤ ∑ l ∈ Finset.univ.image b,
           min (∑ x ∈ Finset.univ.filter (fun x => b x = l ∧ x ∉ I), capS G μ i j x)
             (∑ y ∈ Finset.univ.filter (fun y => b y = l ∧ y ∉ I), capD G μ i j y) := by
-  -- split every edge term into the parts at `I` and the part outside
-  have hsplit : adjMass G ρ ≤ ∑ x, ∑ y, (if x ∈ I ∧ G.Adj x y then ρ x y else 0)
-      + ∑ x, ∑ y, (if y ∈ I ∧ G.Adj x y then ρ x y else 0)
-      + ∑ x, ∑ y, (if G.Adj x y ∧ x ∉ I ∧ y ∉ I then ρ x y else 0) := by
-    unfold adjMass
-    rw [← Finset.sum_add_distrib, ← Finset.sum_add_distrib]
-    refine Finset.sum_le_sum fun x _ => ?_
-    rw [← Finset.sum_add_distrib, ← Finset.sum_add_distrib]
-    refine Finset.sum_le_sum fun y _ => ?_
-    have h0 := hρ.1 x y
-    by_cases hadj : G.Adj x y <;> by_cases hx : x ∈ I <;> by_cases hy : y ∈ I <;>
-      simp [hadj, hx, hy, h0]
-  -- the parts at `I`
-  have hI1 : ∑ x, ∑ y, (if x ∈ I ∧ G.Adj x y then ρ x y else 0) ≤ ∑ x ∈ I, capS G μ i j x := by
-    have h : ∀ x, ∑ y, (if x ∈ I ∧ G.Adj x y then ρ x y else 0)
-        ≤ if x ∈ I then capS G μ i j x else 0 := by
-      intro x
-      by_cases hx : x ∈ I
-      · simp only [hx, true_and, ite_true]
-        exact row_adj_le_capS hρ x
-      · simp [hx]
-    calc _ ≤ ∑ x, (if x ∈ I then capS G μ i j x else 0) := Finset.sum_le_sum fun x _ => h x
-      _ = ∑ x ∈ I, capS G μ i j x := by rw [Finset.sum_ite_mem, Finset.univ_inter]
-  have hI2 : ∑ x, ∑ y, (if y ∈ I ∧ G.Adj x y then ρ x y else 0) ≤ ∑ y ∈ I, capD G μ i j y := by
-    rw [Finset.sum_comm]
-    have h : ∀ y, ∑ x, (if y ∈ I ∧ G.Adj x y then ρ x y else 0)
-        ≤ if y ∈ I then capD G μ i j y else 0 := by
-      intro y
-      by_cases hy : y ∈ I
-      · simp only [hy, true_and, ite_true]
-        exact col_adj_le_capD hρ y
-      · simp [hy]
-    calc _ ≤ ∑ y, (if y ∈ I then capD G μ i j y else 0) := Finset.sum_le_sum fun y _ => h y
-      _ = ∑ y ∈ I, capD G μ i j y := by rw [Finset.sum_ite_mem, Finset.univ_inter]
   -- the part outside `I`, block by block
   have hblock : ∀ x y, (if G.Adj x y ∧ x ∉ I ∧ y ∉ I then ρ x y else 0)
       = ∑ l ∈ Finset.univ.image b,
@@ -481,14 +461,328 @@ theorem adjMass_le_blocks {β : Type*} [DecidableEq β]
               exact (hy ⟨hbb ▸ hbx, hc.2.2⟩).elim
           · rw [ite_eq_right hc]
         · rw [ite_eq_right hbx]
+  rw [hout]
+  exact Finset.sum_le_sum fun l _ => hl l
+
+/-- **The componentwise bound.** Remove a set `I` of hubs (in the paper, `I = {i, j}`); if every edge
+between supply and demand outside `I` joins vertices of the same block, then the mass along edges is
+at most the capped flows at `I` plus, block by block, the smaller of the capped supply and the
+capped demand. -/
+theorem adjMass_le_blocks {β : Type*} [DecidableEq β]
+    (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (I : Finset V) (b : V → β)
+    (hb : ∀ x y, 0 < resP μ i j x → 0 < resN μ i j y → G.Adj x y → x ∉ I → y ∉ I → b x = b y) :
+    adjMass G ρ ≤ ∑ x ∈ I, capS G μ i j x + ∑ y ∈ I, capD G μ i j y
+      + ∑ l ∈ Finset.univ.image b,
+          min (∑ x ∈ Finset.univ.filter (fun x => b x = l ∧ x ∉ I), capS G μ i j x)
+            (∑ y ∈ Finset.univ.filter (fun y => b y = l ∧ y ∉ I), capD G μ i j y) := by
+  -- split every edge term into the parts at `I` and the part outside
+  have hsplit : adjMass G ρ ≤ ∑ x, ∑ y, (if x ∈ I ∧ G.Adj x y then ρ x y else 0)
+      + ∑ x, ∑ y, (if y ∈ I ∧ G.Adj x y then ρ x y else 0)
+      + ∑ x, ∑ y, (if G.Adj x y ∧ x ∉ I ∧ y ∉ I then ρ x y else 0) := by
+    unfold adjMass
+    rw [← Finset.sum_add_distrib, ← Finset.sum_add_distrib]
+    refine Finset.sum_le_sum fun x _ => ?_
+    rw [← Finset.sum_add_distrib, ← Finset.sum_add_distrib]
+    refine Finset.sum_le_sum fun y _ => ?_
+    have h0 := hρ.1 x y
+    by_cases hadj : G.Adj x y <;> by_cases hx : x ∈ I <;> by_cases hy : y ∈ I <;>
+      simp [hadj, hx, hy, h0]
+  -- the parts at `I`
+  have hI1 : ∑ x, ∑ y, (if x ∈ I ∧ G.Adj x y then ρ x y else 0) ≤ ∑ x ∈ I, capS G μ i j x := by
+    have h : ∀ x, ∑ y, (if x ∈ I ∧ G.Adj x y then ρ x y else 0)
+        ≤ if x ∈ I then capS G μ i j x else 0 := by
+      intro x
+      by_cases hx : x ∈ I
+      · simp only [hx, true_and, ite_true]
+        exact row_adj_le_capS hρ x
+      · simp [hx]
+    calc _ ≤ ∑ x, (if x ∈ I then capS G μ i j x else 0) := Finset.sum_le_sum fun x _ => h x
+      _ = ∑ x ∈ I, capS G μ i j x := by rw [Finset.sum_ite_mem, Finset.univ_inter]
+  have hI2 : ∑ x, ∑ y, (if y ∈ I ∧ G.Adj x y then ρ x y else 0) ≤ ∑ y ∈ I, capD G μ i j y := by
+    rw [Finset.sum_comm]
+    have h : ∀ y, ∑ x, (if y ∈ I ∧ G.Adj x y then ρ x y else 0)
+        ≤ if y ∈ I then capD G μ i j y else 0 := by
+      intro y
+      by_cases hy : y ∈ I
+      · simp only [hy, true_and, ite_true]
+        exact col_adj_le_capD hρ y
+      · simp [hy]
+    calc _ ≤ ∑ y, (if y ∈ I then capD G μ i j y else 0) := Finset.sum_le_sum fun y _ => h y
+      _ = ∑ y ∈ I, capD G μ i j y := by rw [Finset.sum_ite_mem, Finset.univ_inter]
   calc adjMass G ρ
       ≤ _ := hsplit
     _ ≤ ∑ x ∈ I, capS G μ i j x + ∑ y ∈ I, capD G μ i j y
           + ∑ l ∈ Finset.univ.image b,
               min (∑ x ∈ Finset.univ.filter (fun x => b x = l ∧ x ∉ I), capS G μ i j x)
-                (∑ y ∈ Finset.univ.filter (fun y => b y = l ∧ y ∉ I), capD G μ i j y) := by
-        rw [hout]
-        exact add_le_add (add_le_add hI1 hI2) (Finset.sum_le_sum fun l _ => hl l)
+                (∑ y ∈ Finset.univ.filter (fun y => b y = l ∧ y ∉ I), capD G μ i j y) :=
+        add_le_add (add_le_add hI1 hI2) (outside_le_blocks hρ I b hb)
+
+/-! ### The sharper bound at `{i, j}` (Theorem 5.3 (iv)) -/
+
+lemma plan_le_resP (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (x y : V) :
+    ρ x y ≤ resP μ i j x := by
+  have hle : ρ x y ≤ ∑ y', ρ x y' :=
+    Finset.single_le_sum (f := fun y' => ρ x y') (fun y' _ => hρ.1 x y') (Finset.mem_univ y)
+  rw [hρ.2.1 x] at hle
+  exact hle
+
+lemma plan_le_resN (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (x y : V) :
+    ρ x y ≤ resN μ i j y := by
+  have hle : ρ x y ≤ ∑ x', ρ x' y :=
+    Finset.single_le_sum (f := fun x' => ρ x' y) (fun x' _ => hρ.1 x' y) (Finset.mem_univ x)
+  rw [hρ.2.2 y] at hle
+  exact hle
+
+/-- The row of `u`: the edge to `w ∈ I` and the edges to vertices outside `I` carry at most `r₊(u)`. -/
+lemma row_at_le (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (I : Finset V) {u w : V}
+    (hw : w ∈ I) :
+    (if G.Adj u w then ρ u w else 0) + ∑ y, (if y ∉ I ∧ G.Adj u y then ρ u y else 0)
+      ≤ resP μ i j u := by
+  have hsum : (if G.Adj u w then ρ u w else 0) = ∑ y, (if y = w ∧ G.Adj u y then ρ u y else 0) := by
+    rw [Finset.sum_eq_single w]
+    · simp
+    · intro y _ hy
+      rw [ite_eq_right (fun h : y = w ∧ G.Adj u y => hy h.1)]
+    · intro h
+      exact absurd (Finset.mem_univ w) h
+  rw [hsum, ← Finset.sum_add_distrib, ← hρ.2.1 u]
+  refine Finset.sum_le_sum fun y _ => ?_
+  have h0 := hρ.1 u y
+  by_cases hy : y = w
+  · have hyI : y ∈ I := by rw [hy]; exact hw
+    rw [ite_eq_right (fun h : y ∉ I ∧ G.Adj u y => h.1 hyI)]
+    split_ifs <;> linarith
+  · rw [ite_eq_right (fun h : y = w ∧ G.Adj u y => hy h.1)]
+    split_ifs <;> linarith
+
+/-- The column of `u`: the edge from `w ∈ I` and the edges from vertices outside `I` carry at most
+`r₋(u)`. -/
+lemma col_at_le (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (I : Finset V) {u w : V}
+    (hw : w ∈ I) :
+    (if G.Adj w u then ρ w u else 0) + ∑ x, (if x ∉ I ∧ G.Adj x u then ρ x u else 0)
+      ≤ resN μ i j u := by
+  have hsum : (if G.Adj w u then ρ w u else 0) = ∑ x, (if x = w ∧ G.Adj x u then ρ x u else 0) := by
+    rw [Finset.sum_eq_single w]
+    · simp
+    · intro x _ hx
+      rw [ite_eq_right (fun h : x = w ∧ G.Adj x u => hx h.1)]
+    · intro h
+      exact absurd (Finset.mem_univ w) h
+  rw [hsum, ← Finset.sum_add_distrib, ← hρ.2.2 u]
+  refine Finset.sum_le_sum fun x _ => ?_
+  have h0 := hρ.1 x u
+  by_cases hx : x = w
+  · have hxI : x ∈ I := by rw [hx]; exact hw
+    rw [ite_eq_right (fun h : x ∉ I ∧ G.Adj x u => h.1 hxI)]
+    split_ifs <;> linarith
+  · rw [ite_eq_right (fun h : x = w ∧ G.Adj x u => hx h.1)]
+    split_ifs <;> linarith
+
+/-- A supplier sends along its other edges at most the demand of its other neighbours; a vertex
+without supply sends nothing. -/
+lemma rowpart_le_opp (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (I : Finset V) (u : V) :
+    ∑ y, (if y ∉ I ∧ G.Adj u y then ρ u y else 0)
+      ≤ if 0 < resP μ i j u then ∑ y, (if y ∉ I ∧ G.Adj u y then resN μ i j y else 0) else 0 := by
+  by_cases hp : 0 < resP μ i j u
+  · rw [ite_eq_left hp]
+    refine Finset.sum_le_sum fun y _ => ?_
+    split_ifs
+    · exact plan_le_resN hρ u y
+    · exact le_rfl
+  · rw [ite_eq_right hp]
+    have hz : resP μ i j u = 0 := le_antisymm (not_lt.mp hp) (resP_nonneg μ i j u)
+    refine le_of_eq (Finset.sum_eq_zero fun y _ => ?_)
+    have h0 : ρ u y = 0 := le_antisymm (by have := plan_le_resP hρ u y; linarith) (hρ.1 u y)
+    rw [h0]
+    simp
+
+/-- A vertex with demand receives along its other edges at most the supply of its other neighbours;
+a vertex without demand receives nothing. -/
+lemma colpart_le_opp (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (I : Finset V) (u : V) :
+    ∑ x, (if x ∉ I ∧ G.Adj x u then ρ x u else 0)
+      ≤ if 0 < resN μ i j u then ∑ x, (if x ∉ I ∧ G.Adj x u then resP μ i j x else 0) else 0 := by
+  by_cases hn : 0 < resN μ i j u
+  · rw [ite_eq_left hn]
+    refine Finset.sum_le_sum fun x _ => ?_
+    split_ifs
+    · exact plan_le_resP hρ x u
+    · exact le_rfl
+  · rw [ite_eq_right hn]
+    have hz : resN μ i j u = 0 := le_antisymm (not_lt.mp hn) (resN_nonneg μ i j u)
+    refine le_of_eq (Finset.sum_eq_zero fun x _ => ?_)
+    have h0 : ρ x u = 0 := le_antisymm (by have := plan_le_resN hρ x u; linarith) (hρ.1 x u)
+    rw [h0]
+    simp
+
+lemma sum_sum_pair_eq (g : V → V → ℝ) (a c : V) :
+    ∑ x, ∑ y, (if x = a ∧ (y = c ∧ G.Adj x y) then g x y else 0)
+      = if G.Adj a c then g a c else 0 := by
+  rw [Finset.sum_eq_single a]
+  · rw [Finset.sum_eq_single c]
+    · simp
+    · intro y _ hy
+      rw [ite_eq_right (fun h : a = a ∧ (y = c ∧ G.Adj a y) => hy h.2.1)]
+    · intro h
+      exact absurd (Finset.mem_univ c) h
+  · intro x _ hx
+    refine Finset.sum_eq_zero fun y _ => ?_
+    rw [ite_eq_right (fun h : x = a ∧ (y = c ∧ G.Adj x y) => hx h.1)]
+  · intro h
+    exact absurd (Finset.mem_univ a) h
+
+lemma sum_sum_fst_eq (g : V → V → ℝ) (a : V) (A : Finset V) :
+    ∑ x, ∑ y, (if x = a ∧ (y ∉ A ∧ G.Adj x y) then g x y else 0)
+      = ∑ y, (if y ∉ A ∧ G.Adj a y then g a y else 0) := by
+  rw [Finset.sum_eq_single a]
+  · simp
+  · intro x _ hx
+    refine Finset.sum_eq_zero fun y _ => ?_
+    rw [ite_eq_right (fun h : x = a ∧ (y ∉ A ∧ G.Adj x y) => hx h.1)]
+  · intro h
+    exact absurd (Finset.mem_univ a) h
+
+lemma sum_sum_snd_eq (g : V → V → ℝ) (a : V) (A : Finset V) :
+    ∑ x, ∑ y, (if y = a ∧ (x ∉ A ∧ G.Adj x y) then g x y else 0)
+      = ∑ x, (if x ∉ A ∧ G.Adj x a then g x a else 0) := by
+  refine Finset.sum_congr rfl fun x _ => ?_
+  rw [Finset.sum_eq_single a]
+  · simp
+  · intro y _ hy
+    rw [ite_eq_right (fun h : y = a ∧ (x ∉ A ∧ G.Adj x y) => hy h.1)]
+  · intro h
+    exact absurd (Finset.mem_univ a) h
+
+/-- An edge at `{i, j}` is `(i, j)`, `(j, i)`, or an edge at exactly one of `i`, `j`. -/
+lemma ite_at_ij (hij : i ≠ j) (g : V → V → ℝ) (x y : V) :
+    (if G.Adj x y ∧ (x ∈ ({i, j} : Finset V) ∨ y ∈ ({i, j} : Finset V)) then g x y else 0)
+      = (if x = i ∧ (y = j ∧ G.Adj x y) then g x y else 0)
+        + (if x = j ∧ (y = i ∧ G.Adj x y) then g x y else 0)
+        + (if x = i ∧ (y ∉ ({i, j} : Finset V) ∧ G.Adj x y) then g x y else 0)
+        + (if y = i ∧ (x ∉ ({i, j} : Finset V) ∧ G.Adj x y) then g x y else 0)
+        + (if x = j ∧ (y ∉ ({i, j} : Finset V) ∧ G.Adj x y) then g x y else 0)
+        + (if y = j ∧ (x ∉ ({i, j} : Finset V) ∧ G.Adj x y) then g x y else 0) := by
+  have hji : j ≠ i := fun h => hij h.symm
+  by_cases hxi : x = i <;> by_cases hxj : x = j <;> by_cases hyi : y = i <;> by_cases hyj : y = j <;>
+    by_cases hadj : G.Adj x y <;> simp_all [Finset.mem_insert, Finset.mem_singleton]
+
+/-- **The componentwise bound of Theorem 5.3 (iv).** A flow moves some `F ≤ F_ij` along `(i, j)`, at
+most `min{O_u, |r(u)| − F}` along the other edges at `u ∈ {i, j}`, and, outside `{i, j}`, at most the
+smaller of the capped supply and the capped demand of every block. So for every `B` that bounds
+`F + min{O_i, |r(i)| − F} + min{O_j, |r(j)| − F}` on `[0, F_ij]` (for instance its maximum), the mass
+along edges is at most `B` plus the block terms. -/
+theorem adjMass_le_blocks_ij {β : Type*} [DecidableEq β] (hij : i ≠ j)
+    (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (b : V → β)
+    (hb : ∀ x y, 0 < resP μ i j x → 0 < resN μ i j y → G.Adj x y →
+      x ∉ ({i, j} : Finset V) → y ∉ ({i, j} : Finset V) → b x = b y)
+    {B : ℝ} (hB : ∀ F, 0 ≤ F → F ≤ flowIJ μ i j →
+      F + min (oppNbr G μ i j i) (resAbs μ i j i - F)
+        + min (oppNbr G μ i j j) (resAbs μ i j j - F) ≤ B) :
+    adjMass G ρ ≤ B + ∑ l ∈ Finset.univ.image b,
+        min (∑ x ∈ Finset.univ.filter (fun x => b x = l ∧ x ∉ ({i, j} : Finset V)), capS G μ i j x)
+          (∑ y ∈ Finset.univ.filter (fun y => b y = l ∧ y ∉ ({i, j} : Finset V)), capD G μ i j y) := by
+  have hiI : i ∈ ({i, j} : Finset V) := by simp
+  have hjI : j ∈ ({i, j} : Finset V) := by simp
+  -- the edges at {i, j} and the others
+  have hsplit : adjMass G ρ ≤
+      ∑ x, ∑ y, (if G.Adj x y ∧ (x ∈ ({i, j} : Finset V) ∨ y ∈ ({i, j} : Finset V))
+          then ρ x y else 0)
+      + ∑ x, ∑ y, (if G.Adj x y ∧ x ∉ ({i, j} : Finset V) ∧ y ∉ ({i, j} : Finset V)
+          then ρ x y else 0) := by
+    unfold adjMass
+    rw [← Finset.sum_add_distrib]
+    refine Finset.sum_le_sum fun x _ => ?_
+    rw [← Finset.sum_add_distrib]
+    refine Finset.sum_le_sum fun y _ => ?_
+    have h0 := hρ.1 x y
+    by_cases hadj : G.Adj x y
+    · by_cases hc : x ∈ ({i, j} : Finset V) ∨ y ∈ ({i, j} : Finset V)
+      · have hcond : G.Adj x y ∧ (x ∈ ({i, j} : Finset V) ∨ y ∈ ({i, j} : Finset V)) := ⟨hadj, hc⟩
+        have hn : ¬ (G.Adj x y ∧ x ∉ ({i, j} : Finset V) ∧ y ∉ ({i, j} : Finset V)) := by
+          rintro ⟨-, hx, hy⟩
+          rcases hc with hc | hc
+          · exact hx hc
+          · exact hy hc
+        rw [ite_eq_left hadj, ite_eq_left hcond, ite_eq_right hn]
+        linarith
+      · have hcond : G.Adj x y ∧ x ∉ ({i, j} : Finset V) ∧ y ∉ ({i, j} : Finset V) :=
+          ⟨hadj, fun h => hc (Or.inl h), fun h => hc (Or.inr h)⟩
+        have hn : ¬ (G.Adj x y ∧ (x ∈ ({i, j} : Finset V) ∨ y ∈ ({i, j} : Finset V))) :=
+          fun h => hc h.2
+        rw [ite_eq_left hadj, ite_eq_right hn, ite_eq_left hcond]
+        linarith
+    · have hn1 : ¬ (G.Adj x y ∧ (x ∈ ({i, j} : Finset V) ∨ y ∈ ({i, j} : Finset V))) :=
+        fun h => hadj h.1
+      have hn2 : ¬ (G.Adj x y ∧ x ∉ ({i, j} : Finset V) ∧ y ∉ ({i, j} : Finset V)) :=
+        fun h => hadj h.1
+      rw [ite_eq_right hadj, ite_eq_right hn1, ite_eq_right hn2]
+      linarith
+  -- the edges at {i, j}: F along (i, j), A_i and A_j along the other edges at i and j
+  have hid : ∑ x, ∑ y, (if G.Adj x y ∧ (x ∈ ({i, j} : Finset V) ∨ y ∈ ({i, j} : Finset V))
+        then ρ x y else 0)
+      = (if G.Adj i j then ρ i j else 0) + (if G.Adj j i then ρ j i else 0)
+        + ∑ y, (if y ∉ ({i, j} : Finset V) ∧ G.Adj i y then ρ i y else 0)
+        + ∑ x, (if x ∉ ({i, j} : Finset V) ∧ G.Adj x i then ρ x i else 0)
+        + ∑ y, (if y ∉ ({i, j} : Finset V) ∧ G.Adj j y then ρ j y else 0)
+        + ∑ x, (if x ∉ ({i, j} : Finset V) ∧ G.Adj x j then ρ x j else 0) := by
+    simp only [ite_at_ij (G := G) hij ρ, Finset.sum_add_distrib]
+    rw [sum_sum_pair_eq, sum_sum_pair_eq, sum_sum_fst_eq, sum_sum_snd_eq, sum_sum_fst_eq,
+      sum_sum_snd_eq]
+  have hf1 : (if G.Adj i j then ρ i j else 0) ≤ ρ i j := by
+    split_ifs
+    · exact le_rfl
+    · exact hρ.1 i j
+  have hf2 : (if G.Adj j i then ρ j i else 0) ≤ ρ j i := by
+    split_ifs
+    · exact le_rfl
+    · exact hρ.1 j i
+  have hf1n : 0 ≤ (if G.Adj i j then ρ i j else 0) := by
+    split_ifs
+    · exact hρ.1 i j
+    · exact le_rfl
+  have hf2n : 0 ≤ (if G.Adj j i then ρ j i else 0) := by
+    split_ifs
+    · exact hρ.1 j i
+    · exact le_rfl
+  have hF : (if G.Adj i j then ρ i j else 0) + (if G.Adj j i then ρ j i else 0) ≤ flowIJ μ i j := by
+    unfold flowIJ
+    exact add_le_add (le_min (hf1.trans (plan_le_resP hρ i j)) (hf1.trans (plan_le_resN hρ i j)))
+      (le_min (hf2.trans (plan_le_resP hρ j i)) (hf2.trans (plan_le_resN hρ j i)))
+  have hri := row_at_le (G := G) hρ ({i, j} : Finset V) (u := i) hjI
+  have hci := col_at_le (G := G) hρ ({i, j} : Finset V) (u := i) hjI
+  have hrj := row_at_le (G := G) hρ ({i, j} : Finset V) (u := j) hiI
+  have hcj := col_at_le (G := G) hρ ({i, j} : Finset V) (u := j) hiI
+  have hOi : ∑ y, (if y ∉ ({i, j} : Finset V) ∧ G.Adj i y then ρ i y else 0)
+      + ∑ x, (if x ∉ ({i, j} : Finset V) ∧ G.Adj x i then ρ x i else 0) ≤ oppNbr G μ i j i := by
+    unfold oppNbr
+    exact add_le_add (rowpart_le_opp hρ _ i) (colpart_le_opp hρ _ i)
+  have hOj : ∑ y, (if y ∉ ({i, j} : Finset V) ∧ G.Adj j y then ρ j y else 0)
+      + ∑ x, (if x ∉ ({i, j} : Finset V) ∧ G.Adj x j then ρ x j else 0) ≤ oppNbr G μ i j j := by
+    unfold oppNbr
+    exact add_le_add (rowpart_le_opp hρ _ j) (colpart_le_opp hρ _ j)
+  have hmi : ∑ y, (if y ∉ ({i, j} : Finset V) ∧ G.Adj i y then ρ i y else 0)
+      + ∑ x, (if x ∉ ({i, j} : Finset V) ∧ G.Adj x i then ρ x i else 0)
+      ≤ min (oppNbr G μ i j i)
+          (resAbs μ i j i - ((if G.Adj i j then ρ i j else 0) + (if G.Adj j i then ρ j i else 0))) := by
+    refine le_min hOi ?_
+    unfold resAbs
+    linarith
+  have hmj : ∑ y, (if y ∉ ({i, j} : Finset V) ∧ G.Adj j y then ρ j y else 0)
+      + ∑ x, (if x ∉ ({i, j} : Finset V) ∧ G.Adj x j then ρ x j else 0)
+      ≤ min (oppNbr G μ i j j)
+          (resAbs μ i j j - ((if G.Adj i j then ρ i j else 0) + (if G.Adj j i then ρ j i else 0))) := by
+    refine le_min hOj ?_
+    unfold resAbs
+    linarith
+  have hBF := hB _ (add_nonneg hf1n hf2n) hF
+  have hat : ∑ x, ∑ y, (if G.Adj x y ∧ (x ∈ ({i, j} : Finset V) ∨ y ∈ ({i, j} : Finset V))
+      then ρ x y else 0) ≤ B := by
+    rw [hid]
+    linarith
+  calc adjMass G ρ ≤ _ := hsplit
+    _ ≤ B + ∑ l ∈ Finset.univ.image b,
+          min (∑ x ∈ Finset.univ.filter (fun x => b x = l ∧ x ∉ ({i, j} : Finset V)), capS G μ i j x)
+            (∑ y ∈ Finset.univ.filter (fun y => b y = l ∧ y ∉ ({i, j} : Finset V)), capD G μ i j y) :=
+        add_le_add hat (outside_le_blocks hρ ({i, j} : Finset V) b hb)
 
 /-! ### Certifying distance `3` from the neighbourhoods -/
 

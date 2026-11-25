@@ -94,24 +94,28 @@ theorem tq_upper_cover_paper (hd : GraphMetric G d) (h3 : ThreeApart G d)
         (∑ y ∈ Y, resN μ i j y - ∑ x ∈ overlap (G := G) i j, resP μ i j x)) :=
   tq_upper_paper hd h3 hi hj (fun _ hρ => adjMass_le_cover hρ hK) hX hY
 
-/-- **Theorem 5.3 (ii) and (iv)** with the componentwise bound for `η`: the capped flows of `i` and `j`
-plus, over blocks that no supply–demand edge outside `{i, j}` crosses, the smaller of the capped
-supply and the capped demand. -/
+/-- **Theorem 5.3 (ii) and (iv)** with the componentwise bound for `η`: for every `B` that bounds
+`F + min{O_i, |r(i)| − F} + min{O_j, |r(j)| − F}` on `[0, F_ij]`, in particular its maximum, `B` plus,
+over blocks that no supply–demand edge outside `{i, j}` crosses, the smaller of the capped supply and the
+capped demand. -/
 theorem tq_upper_blocks_paper {β : Type*} [DecidableEq β] (hd : GraphMetric G d)
-    (h3 : ThreeApart G d) (hi : OneStepAt G μ i) (hj : OneStepAt G μ j) (b : V → β)
+    (h3 : ThreeApart G d) (hij : G.Adj i j) (hi : OneStepAt G μ i) (hj : OneStepAt G μ j)
+    (b : V → β)
     (hb : ∀ x y, 0 < resP μ i j x → 0 < resN μ i j y → G.Adj x y →
       x ∉ ({i, j} : Finset V) → y ∉ ({i, j} : Finset V) → b x = b y)
+    {B : ℝ} (hB : ∀ F, 0 ≤ F → F ≤ flowIJ μ i j →
+      F + min (oppNbr G μ i j i) (resAbs μ i j i - F)
+        + min (oppNbr G μ i j j) (resAbs μ i j j - F) ≤ B)
     {X Y : Finset V} (hX : IsFarX G i j X) (hY : IsFarY G i j Y) :
     cORm d μ i j ≤ 1 - 2 * resMass μ i j
-      + (∑ x ∈ ({i, j} : Finset V), capS G μ i j x + ∑ y ∈ ({i, j} : Finset V), capD G μ i j y
-        + ∑ l ∈ Finset.univ.image b,
+      + (B + ∑ l ∈ Finset.univ.image b,
             min (∑ x ∈ Finset.univ.filter (fun x => b x = l ∧ x ∉ ({i, j} : Finset V)),
                 capS G μ i j x)
               (∑ y ∈ Finset.univ.filter (fun y => b y = l ∧ y ∉ ({i, j} : Finset V)),
                 capD G μ i j y))
       - max 0 (max (∑ x ∈ X, resP μ i j x - ∑ y ∈ overlap (G := G) i j, resN μ i j y)
         (∑ y ∈ Y, resN μ i j y - ∑ x ∈ overlap (G := G) i j, resP μ i j x)) :=
-  tq_upper_paper hd h3 hi hj (fun _ hρ => adjMass_le_blocks hρ {i, j} b hb) hX hY
+  tq_upper_paper hd h3 hi hj (fun _ hρ => adjMass_le_blocks_ij hij.ne hρ b hb hB) hX hY
 
 /-- **Theorem 5.3 for the lazy measure**, the running example of the paper. -/
 theorem tq_lazy_paper (hd : GraphMetric G d) (h3 : ThreeApart G d) (hij : G.Adj i j)
