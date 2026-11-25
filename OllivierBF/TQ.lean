@@ -56,8 +56,8 @@ lemma threeApart_dist (hG : G.Connected) : ThreeApart G (fun x y => (G.dist x y 
   intro x y hxy hadj hcn
   obtain ⟨p, hp⟩ := (hG.preconnected x y).exists_walk_length_eq_dist
   have h3 : 3 ≤ G.dist x y := by
-    by_contra h
-    push_neg at h
+    by_contra h'
+    have h : G.dist x y < 3 := not_le.mp h'
     rw [← hp] at h
     rcases p with _ | ⟨h1, _ | ⟨h2, _ | ⟨h3, q⟩⟩⟩
     · exact hxy rfl
@@ -65,6 +65,7 @@ lemma threeApart_dist (hG : G.Connected) : ThreeApart G (fun x y => (G.dist x y 
     · exact hcn _ ⟨h1, h2⟩
     · simp only [SimpleGraph.Walk.length_cons] at h
       omega
+  show (3 : ℝ) ≤ (G.dist x y : ℝ)
   exact_mod_cast h3
 
 /-! ### Couplings of the residuals -/
@@ -185,15 +186,15 @@ lemma pair_bound_X (hd : GraphMetric G d) (hρ : IsCoupling (resP μ i j) (resN 
       have h3 := hX x hx y hyN hy
       rw [hd.adj hadj] at h3
       linarith
-    rw [if_pos hadj, if_neg hnf, hd.adj hadj]
+    rw [ite_eq_left hadj, ite_eq_right hnf, hd.adj hadj]
     norm_num
   · have hd2 := hd.two_le hxy hadj
-    rw [if_neg hadj]
+    rw [ite_eq_right hadj]
     by_cases hf : x ∈ X ∧ y ∉ overlap (G := G) i j
-    · rw [if_pos hf]
+    · rw [ite_eq_left hf]
       have h3 := hX x hf.1 y hyN hf.2
       linarith
-    · rw [if_neg hf]
+    · rw [ite_eq_right hf]
       linarith
 
 /-- The same, with the far set on the demand side. -/
@@ -216,15 +217,15 @@ lemma pair_bound_Y (hd : GraphMetric G d) (hρ : IsCoupling (resP μ i j) (resN 
       have h3 := hY y hy x hxP hx
       rw [hd.adj hadj] at h3
       linarith
-    rw [if_pos hadj, if_neg hnf, hd.adj hadj]
+    rw [ite_eq_left hadj, ite_eq_right hnf, hd.adj hadj]
     norm_num
   · have hd2 := hd.two_le hxy hadj
-    rw [if_neg hadj]
+    rw [ite_eq_right hadj]
     by_cases hf : y ∈ Y ∧ x ∉ overlap (G := G) i j
-    · rw [if_pos hf]
+    · rw [ite_eq_left hf]
       have h3 := hY y hf.1 x hxP hf.2
       linarith
-    · rw [if_neg hf]
+    · rw [ite_eq_right hf]
       linarith
 
 /-- Summing the pointwise weights: `2·mass − (mass along edges) + (far mass)`. -/
@@ -347,17 +348,17 @@ theorem adjMass_le_cover (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) {K : 
   refine Finset.sum_le_sum fun y _ => ?_
   have h0 := hρ.1 x y
   by_cases hadj : G.Adj x y
-  · rw [if_pos hadj]
+  · rw [ite_eq_left hadj]
     rcases h0.eq_or_lt with h | h
     · rw [← h]
       split_ifs <;> linarith
     · obtain ⟨hx, hy⟩ := resid_pos_of_plan_pos hρ h
       rcases hK x y hx hy hadj with hxK | hyK
-      · rw [if_pos hxK]
+      · rw [ite_eq_left hxK]
         split_ifs <;> linarith
-      · rw [if_pos hyK]
+      · rw [ite_eq_left hyK]
         split_ifs <;> linarith
-  · rw [if_neg hadj]
+  · rw [ite_eq_right hadj]
     split_ifs <;> linarith
 
 /-- **The componentwise bound.** Remove a set `I` of hubs (in the paper, `I = {i, j}`); if every edge
@@ -433,53 +434,53 @@ theorem adjMass_le_blocks {β : Type*} [DecidableEq β]
       rw [Finset.sum_filter]
       refine Finset.sum_le_sum fun x _ => ?_
       by_cases hx : b x = l ∧ x ∉ I
-      · rw [if_pos hx]
+      · rw [ite_eq_left hx]
         refine le_trans ?_ (row_adj_le_capS hρ x)
         refine Finset.sum_le_sum fun y _ => ?_
         have h0 := hρ.1 x y
         by_cases hc : G.Adj x y ∧ x ∉ I ∧ y ∉ I
-        · simp only [if_pos hx.1, if_pos hc, if_pos hc.1, le_refl]
-        · rw [if_pos hx.1, if_neg hc]
+        · simp only [ite_eq_left hx.1, ite_eq_left hc, ite_eq_left hc.1, le_refl]
+        · rw [ite_eq_left hx.1, ite_eq_right hc]
           split_ifs <;> linarith
-      · rw [if_neg hx]
+      · rw [ite_eq_right hx]
         refine le_of_eq (Finset.sum_eq_zero fun y _ => ?_)
         by_cases hbx : b x = l
-        · rw [if_pos hbx]
+        · rw [ite_eq_left hbx]
           have hxI : x ∈ I := by
             by_contra hxI
             exact hx ⟨hbx, hxI⟩
-          rw [if_neg (fun hc => hc.2.1 hxI)]
-        · rw [if_neg hbx]
+          rw [ite_eq_right (fun hc => hc.2.1 hxI)]
+        · rw [ite_eq_right hbx]
     · -- through the demand side: edges outside `I` with mass stay in the block
       rw [Finset.sum_comm, Finset.sum_filter]
       refine Finset.sum_le_sum fun y _ => ?_
       by_cases hy : b y = l ∧ y ∉ I
-      · rw [if_pos hy]
+      · rw [ite_eq_left hy]
         refine le_trans ?_ (col_adj_le_capD hρ y)
         refine Finset.sum_le_sum fun x _ => ?_
         have h0 := hρ.1 x y
         by_cases hbx : b x = l
-        · rw [if_pos hbx]
+        · rw [ite_eq_left hbx]
           by_cases hc : G.Adj x y ∧ x ∉ I ∧ y ∉ I
-          · simp only [if_pos hc, if_pos hc.1, le_refl]
-          · rw [if_neg hc]
+          · simp only [ite_eq_left hc, ite_eq_left hc.1, le_refl]
+          · rw [ite_eq_right hc]
             split_ifs <;> linarith
-        · rw [if_neg hbx]
+        · rw [ite_eq_right hbx]
           split_ifs <;> linarith
-      · rw [if_neg hy]
+      · rw [ite_eq_right hy]
         refine le_of_eq (Finset.sum_eq_zero fun x _ => ?_)
         by_cases hbx : b x = l
-        · rw [if_pos hbx]
+        · rw [ite_eq_left hbx]
           by_cases hc : G.Adj x y ∧ x ∉ I ∧ y ∉ I
-          · rw [if_pos hc]
+          · rw [ite_eq_left hc]
             -- an edge with mass outside `I` joins vertices of one block
             rcases (hρ.1 x y).eq_or_lt with h | h
             · exact h.symm
             · obtain ⟨hx, hy'⟩ := resid_pos_of_plan_pos hρ h
               have hbb := hb x y hx hy' hc.1 hc.2.1 hc.2.2
               exact (hy ⟨hbb ▸ hbx, hc.2.2⟩).elim
-          · rw [if_neg hc]
-        · rw [if_neg hbx]
+          · rw [ite_eq_right hc]
+        · rw [ite_eq_right hbx]
   calc adjMass G ρ
       ≤ _ := hsplit
     _ ≤ ∑ x ∈ I, capS G μ i j x + ∑ y ∈ I, capD G μ i j y
@@ -529,8 +530,8 @@ lemma nbr_of_degree_eq {y : V} (hyj : G.Adj j y)
     (hdeg : G.degree y = 1 + (G.neighborFinset y ∩ common G i j).card) :
     ∀ w, G.Adj y w → w = j ∨ w ∈ common G i j := by
   intro w hw
-  by_contra h
-  push_neg at h
+  by_contra h'
+  have h := not_or.mp h'
   have hsub : insert w (insert j (G.neighborFinset y ∩ common G i j)) ⊆ G.neighborFinset y := by
     intro v hv
     simp only [Finset.mem_insert, Finset.mem_inter, SimpleGraph.mem_neighborFinset] at hv ⊢

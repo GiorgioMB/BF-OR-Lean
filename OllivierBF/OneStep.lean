@@ -69,8 +69,8 @@ lemma resP_sum_eq_resN_sum (hi : OneStepAt G μ i) (hj : OneStepAt G μ j) :
 
 lemma mem_closed_of_resP_pos (hi : OneStepAt G μ i) (hj : OneStepAt G μ j) {x : V}
     (hx : 0 < resP μ i j x) : x = i ∨ G.Adj i x := by
-  by_contra h
-  push_neg at h
+  by_contra h'
+  have h := not_or.mp h'
   have h0 : μ i x = 0 := hi.supp x h.1 h.2
   have : resP μ i j x = 0 := by
     unfold resP; rw [h0, min_eq_left (hj.nonneg x)]; ring
@@ -78,8 +78,8 @@ lemma mem_closed_of_resP_pos (hi : OneStepAt G μ i) (hj : OneStepAt G μ j) {x 
 
 lemma mem_closed_of_resN_pos (hi : OneStepAt G μ i) (hj : OneStepAt G μ j) {y : V}
     (hy : 0 < resN μ i j y) : y = j ∨ G.Adj j y := by
-  by_contra h
-  push_neg at h
+  by_contra h'
+  have h := not_or.mp h'
   have h0 : μ j y = 0 := hj.supp y h.1 h.2
   have : resN μ i j y = 0 := by
     unfold resN; rw [h0, min_eq_right (hi.nonneg y)]; ring
@@ -185,7 +185,7 @@ theorem savings_identity {ρ : V → V → ℝ} (hρ : IsCoupling (resP μ i j) 
 
 lemma exists_resid_coupling_of (hi : OneStepAt G μ i) (hj : OneStepAt G μ j) :
     ∃ ρ, IsCoupling (resP μ i j) (resN μ i j) ρ :=
-  exists_resid_coupling hi.nonneg hj.nonneg (by rw [hi.mass, hj.mass])
+  exists_resid_coupling (μ := μ i) (ν := μ j) (by rw [hi.mass, hj.mass])
 
 /-! ### Instances: uniform idleness and the lazy measure -/
 

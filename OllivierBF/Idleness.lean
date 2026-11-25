@@ -55,7 +55,7 @@ lemma w_eq_one_div_ρmax (hle : ρ G i ≤ ρ G j) : w G j = 1 / (ρmax G i j + 
 lemma resid_idle_at_i (hij : G.Adj i j) :
     resP (mp G (w G j)) i j i = 0 ∧ resN (mp G (w G j)) i j i = 0 := by
   have h1 : mp G (w G j) j i = w G j := by
-    simp only [mp, if_neg hij.ne, if_pos hij.symm]
+    simp only [mp, ite_eq_right hij.ne, ite_eq_left hij.symm]
     exact lazy_nbr_weight hij.symm
   have h2 : mp G (w G j) i i = w G j := by simp [mp]
   unfold resP resN
@@ -79,19 +79,19 @@ lemma resid_idle_overlap (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) {k : V}
   rcases hk with hki | hkj | ⟨hik, hjk⟩
   · rw [hki]
     have e1 : mp G (w G j) j i = (1 - w G j) / ρ G j := by
-      simp only [mp, if_neg hij.ne, if_pos hij.symm]
+      simp only [mp, ite_eq_right hij.ne, ite_eq_left hij.symm]
     have e2 : mp G (w G j) i i = w G j := by simp [mp]
-    rw [e1, e2, hjj]
+    exact le_of_eq (by rw [e1, e2, hjj])
   · rw [hkj]
     have e3 : mp G (w G j) i j = (1 - w G j) / ρ G i := by
-      simp only [mp, if_neg hij.ne', if_pos hij]
+      simp only [mp, ite_eq_right hij.ne', ite_eq_left hij]
     have e4 : mp G (w G j) j j = w G j := by simp [mp]
     rw [e3, e4]
     linarith
   · have e5 : mp G (w G j) i k = (1 - w G j) / ρ G i := by
-      simp only [mp, if_neg hik.ne', if_pos hik]
+      simp only [mp, ite_eq_right hik.ne', ite_eq_left hik]
     have e6 : mp G (w G j) j k = (1 - w G j) / ρ G j := by
-      simp only [mp, if_neg hjk.ne', if_pos hjk]
+      simp only [mp, ite_eq_right hjk.ne', ite_eq_left hjk]
     rw [e5, e6]
     exact hdiv
 
@@ -122,8 +122,7 @@ theorem idleness_sign (hB : BourneLinear G d) (hij : G.Adj i j) (hle : ρ G i �
   constructor
   · intro h
     by_contra h'
-    push_neg at h'
-    have := mul_nonneg hc.le h'
+    have := mul_nonneg hc.le (not_lt.mp h')
     linarith
   · intro h
     exact mul_neg_of_pos_of_neg hc h
