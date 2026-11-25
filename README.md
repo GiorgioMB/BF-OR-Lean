@@ -2,21 +2,23 @@
 
 [![CI](https://github.com/GiorgioMB/BF-OR-Lean/actions/workflows/ci.yml/badge.svg)](https://github.com/GiorgioMB/BF-OR-Lean/actions/workflows/ci.yml)
 
-A Lean 4 formalization of the bounds of
+A Lean 4 formalization of
 
-> Giorgio Micaletto and Tebe Nigrelli. *From Proxy to Certificate: Two-Sided Ollivier--Ricci Bounds from Balanced Forman Curvature.* 2026. [arXiv:2603.13535](https://arxiv.org/abs/2603.13535)
+> Giorgio Micaletto and Tebe Nigrelli. *From Proxy to Certificate: Ollivier–Ricci Bounds from the
+> Building Blocks of Balanced Forman Curvature.* 2026.
 
-For every edge of a finite simple graph, the Balanced Forman (BF) curvature of the edge and the degrees of its
-endpoints certify an interval for its lazy Ollivier–Ricci (OR) curvature. This repository proves that
-interval, the transport bounds it is built from, the 2-hop interval, the reverse direction, and the
-correctness of certify-then-solve. The experiments are in
-[Curvature-Transfer-Code](https://github.com/GiorgioMB/Curvature-Transfer-Code).
+For every edge of a finite simple graph and every one-step measure (lazy, non-lazy, or of uniform
+idleness), the triangles and quadrangles at the endpoints certify an interval for the Ollivier–Ricci
+(OR) curvature of the edge. This repository proves the savings form of the transport problem, the
+certificate, its version for uniform idleness, and the correctness of certify-then-solve. The results
+of the previous version of the paper (the BF interval and the 2-hop interval) remain proved here.
+The experiments are in [Curvature-Transfer-Code](https://github.com/GiorgioMB/Curvature-Transfer-Code).
 
 It builds with Lean `v4.36.0-rc1` and the Mathlib commit pinned in `lake-manifest.json`, has no `sorry`, and
 declares no axioms; CI checks that the main theorems rest only on Lean's standard axioms
-(`scripts/CheckAxioms.lean`). One published result, Lemma 3.3 of the paper
-([Bourne et al.](https://arxiv.org/abs/1704.04398)), is not re-proved: it is the hypothesis `BourneFact` of
-Proposition 4.1 only.
+(`scripts/CheckAxioms.lean`). Published results enter only as hypotheses: Theorems 1.1 and 5.5 of
+[Bourne et al.](https://arxiv.org/abs/1704.04398) as `BourneLinear` (Corollary 5.4) and, for the previous
+version, their case `BourneFact` (Proposition 4.1 there).
 
 ```bash
 lake exe cache get
@@ -25,20 +27,43 @@ lake build
 
 ## The main theorem
 
-The BF interval (Corollary 5.8), with the endpoints labelled so that `ρ G i ≤ ρ G j`:
+The triangle–quadrangle certificate (Theorem 5.3), for a one-step measure `μ`, a vertex cover `K` of the
+edges between residual supply and demand, and the far sets `X₃`, `Y₃`:
 
 ```lean
-theorem bf_interval_paper (hd : GraphMetric G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) :
-    phiInt (ρ G i) (ρ G j) (cBF G i j) ≤ cOR G d i j ∧ cOR G d i j ≤ psiInt G i j (cBF G i j)
+theorem tq_upper_cover_paper (hd : GraphMetric G d) (h3 : ThreeApart G d)
+    (hi : OneStepAt G μ i) (hj : OneStepAt G μ j) {K : Finset V} (hK : CoversResid G μ i j K)
+    {X Y : Finset V} (hX : IsFarX G i j X) (hY : IsFarY G i j Y) :
+    cORm d μ i j ≤ 1 - 2 * resMass μ i j + (∑ x ∈ K, resP μ i j x + ∑ y ∈ K, resN μ i j y)
+      - max 0 (max (∑ x ∈ X, resP μ i j x - ∑ y ∈ overlap i j, resN μ i j y)
+        (∑ y ∈ Y, resN μ i j y - ∑ x ∈ overlap i j, resP μ i j x))
 ```
 
-The theorems hold for every `d` with `GraphMetric G d` (zero on the diagonal, one on edges, at least one
-between distinct vertices and two between non-adjacent ones, symmetric, triangle inequality);
-`graphMetric_dist` shows that the shortest-path distance of a connected graph qualifies. `W1` is the infimum
-of the transport cost over couplings: lower ends come from explicit couplings (`W1_le_cost`), upper ends
-from 1-Lipschitz potentials (`cost_ge_potential`).
+with the lower end `tq_lower_paper`. `W1` is the infimum of the transport cost over couplings; lower ends
+come from explicit couplings (`W1_le_cost`), and upper ends from bounds valid for every coupling of the
+residuals, through `W1_eq_W1_resid`, the finite form of Corollary 1.16 of Villani, proved here by splicing
+the mass that passes through each vertex. `ThreeApart` (distinct, non-adjacent vertices without a common
+neighbour are at distance at least 3) holds for the shortest-path distance (`threeApart_dist`).
 
 ## What is proved
+
+| Paper | Lean | File |
+|---|---|---|
+| Lemma 4.1 | `residuals_paper`; `resP_mLazy`, `resN_mLazy` for the lazy measure | `PaperTQ`, `OneStep` |
+| Proposition 4.2 | `savings_paper`; `W1_eq_W1_resid` (Villani, Corollary 1.16), `cost_eq_three_mass_sub_savings` | `PaperTQ`, `Residual` |
+| Theorem 5.3 (i) | `tq_lower_paper`; `exists_extension` for partial plans | `PaperTQ`, `Residual` |
+| Theorem 5.3 (ii) | `tq_upper_paper` for any bound on the mass along edges; `tq_upper_cover_paper` for vertex covers | `PaperTQ`, `TQ` |
+| Theorem 5.3 (iv), the bound `η'` | `tq_upper_blocks_paper` (componentwise bound) | `PaperTQ`, `TQ` |
+| Theorem 5.3, lazy measure | `tq_lazy_paper` | `PaperTQ` |
+| Corollary 5.4 | `idleness_paper`, `idleness_bounds`, `idleness_sign` (hypothesis `BourneLinear`) | `PaperTQ`, `Idleness` |
+| Algorithm 1 | `certifyThenSolve_tq` | `TQ` |
+
+Not formalized: Theorem 5.2 (the exact range over consistent graphs and its attainment, which need
+constructions of graphs), parts (iii) and (iv) of Theorem 5.3 other than the bound `η'` (the containment of
+the exact range, and the running time), the order of the greedy routing (any order gives a valid lower end),
+and Remark 3.1.
+
+### Results of the previous version
 
 | Paper | Lean | File |
 |---|---|---|
@@ -81,3 +106,8 @@ after Corollary C.2; the examples; and the validity of the dual bound of TLW tha
 | `Cover` | König's theorem for the cross-edge graph, Lemma 3.6, the vertex-cover potentials of Proposition 4.8 |
 | `Paper` | the results of Sections 4–5 and Appendix C in the form of the paper |
 | `Unclipped`, `Exactness`, `ArbitraryIdleness`, `Screening` | Proposition 5.1 (ii)–(iii), the exactness results, Proposition B.1, Algorithm 1 |
+| `Residual` | `W₁` of the residuals (Villani, Corollary 1.16), savings, extension of partial plans |
+| `OneStep` | one-step measures, residuals, Lemma 4.1, Proposition 4.2, lazy and uniform-idleness instances |
+| `TQ` | Theorem 5.3: both ends, vertex-cover and componentwise bounds, `ThreeApart`, Algorithm 1 |
+| `Idleness` | Corollary 5.4 under `BourneLinear` |
+| `PaperTQ` | the results of this version in the form in which the paper states them |
