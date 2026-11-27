@@ -27,6 +27,8 @@ lake build
 
 | Paper | Lean | File |
 |---|---|---|
+| Lemma 4.1 | `residuals_full_paper` | `ResidualsFull` |
+| Lemma 4.1, the lazy measure | `lazy_residuals_paper` | `ResidualsFull` |
 | Proposition 4.2 | `savings_paper` | `PaperTQ` |
 | Theorem 5.2 | `attainable_range_paper` | `AttainableRange` |
 | Theorem 5.3 (i) | `tq_lower_paper` | `PaperTQ` |
@@ -53,6 +55,7 @@ Not formalized: part (iii) of Theorem 5.3 and the running time in (iv), and the 
 | `Graph` | graph metrics and the neighbourhoods of an edge |
 | `Residual` | `W₁` of the residuals (Villani, Corollary 1.16), savings, extension of partial plans |
 | `OneStep` | one-step measures, residuals, Lemma 4.1, Proposition 4.2 |
+| `ResidualsFull` | Lemma 4.1 in full: supports, distances on `N[i] ∪ N[j]`, the lazy measure |
 | `TQ` | Theorem 5.3 |
 | `PaperTQ` | Proposition 4.2 and Theorem 5.3 as the paper states them |
 | `AttainableRange` | Theorem 5.2 |
