@@ -87,7 +87,11 @@ def chargedDist (F : Finset (Sym2 V)) (p q : V) : ℝ :=
 noncomputable def kappaF (μ : V → V → ℝ) (F : Finset (Sym2 V)) : ℝ := cORm (chargedDist G i j F) μ i j
 
 lemma empty_mem_admissibleSets : (∅ : Finset (Sym2 V)) ∈ admissibleSets G i j := by
-  simp [admissibleSets, pairDeg]
+  unfold admissibleSets
+  rw [Finset.mem_filter]
+  refine ⟨Finset.empty_mem_powerset _, fun v => ?_⟩
+  unfold pairDeg
+  simp
 
 /-- The upper end `κ̄*`: the largest `kappaF F` over admissible `F`. -/
 noncomputable def kappaMax (μ : V → V → ℝ) : ℝ :=
@@ -110,7 +114,7 @@ def Agrees (μ : V → V → ℝ) {V' : Type u} (μ' : V' → V' → ℝ) (e : V
 /-- The candidate pairs that are edges of `G'`. -/
 def pairsOf {V' : Type u} (G' : SimpleGraph V') [DecidableRel G'.Adj] (e : V → V') : Finset (Sym2 V) :=
   (cand G i j).filter (fun z => Sym2.lift ⟨fun a b => decide (G'.Adj (e a) (e b)),
-    fun a b => decide_eq_decide.mpr (G'.adj_comm _ _)⟩ z = true)
+    fun a b => decide_eq_decide.mpr (G'.adj_comm (e a) (e b))⟩ z = true)
 
 variable {G i j}
 
@@ -333,8 +337,8 @@ consistent graph is the distance of Theorem 5.2 for the pairs of that graph. -/
 theorem Consistent.dist_eq (hij : G.Adj i j) (hc : Consistent G i j G' e) {d' : V' → V' → ℝ}
     (hd : GraphMetric G' d') (h3 : ThreeApart G' d') {p q : V} (hp : p = i ∨ G.Adj i p)
     (hq : q = j ∨ G.Adj j q) : d' (e p) (e q) = chargedDist G i j (pairsOf G i j G' e) p q := by
-  have hpK := closed_i_known hp
-  have hqK := closed_j_known hq
+  have hpK : p ∈ known G i j := closed_i_known hp
+  have hqK : q ∈ known G i j := closed_j_known hq
   have hiK : i ∈ known G i j := listed_known i_listed
   have hjK : j ∈ known G i j := listed_known j_listed
   have he_ij : G'.Adj (e i) (e j) := (hc.adj_iff i_listed hjK).mpr hij
