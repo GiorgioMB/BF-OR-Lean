@@ -8,3 +8,4 @@ public import OllivierBF.TQ
 public import OllivierBF.PaperTQ
 public import OllivierBF.AttainableRange
 public import OllivierBF.ResidualsFull
+public import OllivierBF.SavingsMax
