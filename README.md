@@ -32,6 +32,7 @@ lake build
 | Proposition 4.2 | `savings_paper` | `PaperTQ` |
 | Proposition 4.2, `σ*` a maximum and `κ_μ = 1 − 3τ + σ*` | `savings_max_paper` | `SavingsMax` |
 | Theorem 5.2 | `attainable_range_paper` | `AttainableRange` |
+| Theorem 5.2, ends `1 − 3τ + σ*_∅` and `1 − 3τ + max_F σ*_F` | `attainable_range_savings_paper` | `RangeSavings` |
 | Theorem 5.3 (i) | `tq_lower_paper` | `PaperTQ` |
 | Theorem 5.3 (ii) | `tq_upper_paper` | `PaperTQ` |
 | Theorem 5.3 (iv), the bound `η'` | `tq_upper_blocks_paper` | `PaperTQ` |
@@ -44,7 +45,10 @@ injective on the known vertices (`Consistent`), with measures that agree with `�
 (`Agrees`, which is what locality gives). Its ends are `kappaF ∅` and `kappaMax`, the curvature with
 the distance of the theorem (`chargedDist`); `range_bounds` places every consistent graph between
 them, and the graph `realize F` of the listed edges, the pairs of `F`, and pendant vertices that
-complete the degrees attains `kappaF F` (`realize_kappa`).
+complete the degrees attains `kappaF F` (`realize_kappa`). `attainable_range_savings_paper` states the ends as the paper
+does, `1 − 3τ + σ*_∅` and `1 − 3τ + max_F σ*_F`: `chargedDist F` need not be a metric, but it
+satisfies the triangle inequality through `S` (`chargedDist_tri_overlap`), which is all the residual
+reduction needs (`W1_eq_W1_resid_on`), so `kappaF F = 1 − 3τ + σ*_F` (`kappaF_eq_sigmaStar`).
 
 Not formalized: part (iii) of Theorem 5.3 and the running time in (iv), and the experiments.
 
@@ -61,3 +65,4 @@ Not formalized: part (iii) of Theorem 5.3 and the running time in (iv), and the 
 | `SavingsMax` | `σ*` as a maximum over partial plans (compactness), Proposition 4.2 as displayed |
 | `PaperTQ` | Proposition 4.2 and Theorem 5.3 as the paper states them |
 | `AttainableRange` | Theorem 5.2 |
+| `RangeSavings` | the residual reduction for the charged distance, Theorem 5.2 in savings form |
