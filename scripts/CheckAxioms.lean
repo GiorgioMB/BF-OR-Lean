@@ -11,5 +11,6 @@ import OllivierBF
 #print axioms OllivierBF.tq_lower_paper
 #print axioms OllivierBF.tq_upper_paper
 #print axioms OllivierBF.tq_upper_maxFlow_paper
+#print axioms OllivierBF.tq_range_paper
 #print axioms OllivierBF.tq_upper_blocks_paper
 #print axioms OllivierBF.maxFlow_le_blocks_paper

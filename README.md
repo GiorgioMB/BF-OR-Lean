@@ -36,6 +36,7 @@ lake build
 | Theorem 5.3 (i) | `tq_lower_paper` | `PaperTQ` |
 | Theorem 5.3 (ii) | `tq_upper_paper` | `PaperTQ` |
 | Theorem 5.3 (ii), `η` the maximum flow | `tq_upper_maxFlow_paper` | `MaxFlow` |
+| Theorem 5.3 (iii) | `tq_range_paper` | `RangeTQ` |
 | Theorem 5.3 (iv), the bound `η'` | `tq_upper_blocks_paper` | `PaperTQ` |
 | Theorem 5.3 (iv), `η' ≥ η` | `maxFlow_le_blocks_paper` | `MaxFlow` |
 
@@ -52,7 +53,7 @@ does, `1 − 3τ + σ*_∅` and `1 − 3τ + max_F σ*_F`: `chargedDist F` need 
 satisfies the triangle inequality through `S` (`chargedDist_tri_overlap`), which is all the residual
 reduction needs (`W1_eq_W1_resid_on`), so `kappaF F = 1 − 3τ + σ*_F` (`kappaF_eq_sigmaStar`).
 
-Not formalized: part (iii) of Theorem 5.3 and the running time in (iv), and the experiments.
+Not formalized: the running time in Theorem 5.3 (iv), and the experiments.
 
 ## Layout
 
@@ -69,3 +70,4 @@ Not formalized: part (iii) of Theorem 5.3 and the running time in (iv), and the 
 | `AttainableRange` | Theorem 5.2 |
 | `RangeSavings` | the residual reduction for the charged distance, Theorem 5.2 in savings form |
 | `MaxFlow` | `η` as a maximum flow, Theorem 5.3 (ii) and (iv) with it |
+| `RangeTQ` | Theorem 5.3 (iii) |
