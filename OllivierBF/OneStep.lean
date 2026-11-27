@@ -5,14 +5,11 @@
   `U_j`, and every supply–demand pair is within distance `3`, and within distance `2` unless it lies
   in `U_i × U_j`. The curvature is `1 − W₁(r₊, r₋)`, and the cost of a coupling of the residuals is
   `3τ` minus its savings (Proposition 4.2).
-
-  The lazy measure `mLazy` and the uniform-idleness measures `mp p` are instances (`cORm_mLazy`,
-  `cORm_mp`).
 -/
 module
 
 public import OllivierBF.Residual
-public import OllivierBF.Curvature
+public import OllivierBF.Graph
 
 @[expose] public section
 
@@ -186,35 +183,5 @@ theorem savings_identity {ρ : V → V → ℝ} (hρ : IsCoupling (resP μ i j) 
 lemma exists_resid_coupling_of (hi : OneStepAt G μ i) (hj : OneStepAt G μ j) :
     ∃ ρ, IsCoupling (resP μ i j) (resN μ i j) ρ :=
   exists_resid_coupling (μ := μ i) (ν := μ j) (by rw [hi.mass, hj.mass])
-
-/-! ### Instances: uniform idleness and the lazy measure -/
-
-lemma oneStepAt_mp {p : ℝ} (hp0 : 0 ≤ p) (hp1 : p ≤ 1) {u v : V} (huv : G.Adj u v) :
-    OneStepAt G (mp G p) u where
-  nonneg k := mp_nonneg hp0 hp1 u k
-  mass := mp_sum huv
-  supp k hk hadj := by simp [mp, hk, hadj]
-
-lemma oneStepAt_mLazy {u v : V} (huv : G.Adj u v) : OneStepAt G (mLazy G) u where
-  nonneg k := mLazy_nonneg u k
-  mass := mLazy_sum huv
-  supp k hk hadj := by simp [mLazy, mp, hk, hadj]
-
-lemma cORm_mLazy (i j : V) : cORm d (mLazy G) i j = cOR G d i j := rfl
-
-lemma cORm_mp (p : ℝ) (i j : V) : cORm d (mp G p) i j = cORp G d p i j := rfl
-
-/-- **Lemma 4.1 for the lazy measure**: `r₊ = Δ` on `S` and `w_i` on `U_i`. -/
-lemma resP_mLazy (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) (k : V) :
-    resP (mLazy G) i j k = (if k ∈ overlap (G := G) i j then w G i - w G j else 0) +
-      (if k ∈ uniq G i j then w G i else 0) := by
-  unfold resP
-  exact lazy_resid_i hij hle k
-
-/-- **Lemma 4.1 for the lazy measure**: `r₋ = w_j` on `U_j`. -/
-lemma resN_mLazy (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j) (k : V) :
-    resN (mLazy G) i j k = if k ∈ uniq G j i then w G j else 0 := by
-  unfold resN
-  exact lazy_resid_j hij hle k
 
 end OllivierBF

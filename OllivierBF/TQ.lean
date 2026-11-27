@@ -5,17 +5,15 @@
     ones on its support, gives `κ ≥ 1 − 3τ + Σ (3 − c) π`.
   * (ii) `tq_upper`: if `η` bounds the mass that couplings of the residuals move along edges, and
     `X₃`, `Y₃` are certified at distance `3` from the opposite residual outside `S`, then
-    `κ ≤ 1 − 2τ + η − D₃`. The bound `η` can be the weight of any vertex cover of the edges between
-    supply and demand (`adjMass_le_cover`), or the componentwise bound of the paper
-    (`adjMass_le_blocks`). `far_of_closedX` and `far_of_closedY` certify `X₃` and `Y₃` from the
-    neighbourhoods, using `ThreeApart`, which the shortest-path distance satisfies
-    (`threeApart_dist`).
-  * Algorithm 1 with the certificate: `certifyThenSolve_tq`.
+    `κ ≤ 1 − 2τ + η − D₃`.
+  * (iv) the bound `η'`: the flow along `(i, j)` and the capacities left at `i` and `j`, and, outside
+    `{i, j}`, the smaller of the capped supply and the capped demand of every block
+    (`adjMass_le_blocks_ij`). `far_of_closedX` and `far_of_closedY` certify `X₃` and `Y₃` from the
+    neighbourhoods, using `ThreeApart`, which the shortest-path distance satisfies (`threeApart_dist`).
 -/
 module
 
 public import OllivierBF.OneStep
-public import OllivierBF.Screening
 
 @[expose] public section
 
@@ -34,10 +32,6 @@ noncomputable def adjMass (G : SimpleGraph V) [DecidableRel G.Adj] (π : V → V
 /-- Distinct vertices with no edge and no common neighbour are at distance at least `3`. -/
 def ThreeApart (G : SimpleGraph V) (d : V → V → ℝ) : Prop :=
   ∀ x y, x ≠ y → ¬ G.Adj x y → (∀ w, ¬ (G.Adj x w ∧ G.Adj w y)) → 3 ≤ d x y
-
-/-- `K` meets every edge between a vertex with residual supply and one with residual demand. -/
-def CoversResid (G : SimpleGraph V) (μ : V → V → ℝ) (i j : V) (K : Finset V) : Prop :=
-  ∀ x y, 0 < resP μ i j x → 0 < resN μ i j y → G.Adj x y → x ∈ K ∨ y ∈ K
 
 /-- Capped supply: at most the residual supply and the residual demand of the neighbours. -/
 noncomputable def capS (G : SimpleGraph V) [DecidableRel G.Adj] (μ : V → V → ℝ) (i j x : V) : ℝ :=
@@ -352,30 +346,6 @@ lemma col_adj_le_capD (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (y : V) 
         _ = resP μ i j x := hρ.2.1 x
     · exact le_rfl
 
-/-- **A vertex cover bounds the mass along edges.** -/
-theorem adjMass_le_cover (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) {K : Finset V}
-    (hK : CoversResid G μ i j K) :
-    adjMass G ρ ≤ ∑ x ∈ K, resP μ i j x + ∑ y ∈ K, resN μ i j y := by
-  rw [← sum_row_ind hρ K, ← sum_col_ind hρ K, ← Finset.sum_add_distrib]
-  unfold adjMass
-  refine Finset.sum_le_sum fun x _ => ?_
-  rw [← Finset.sum_add_distrib]
-  refine Finset.sum_le_sum fun y _ => ?_
-  have h0 := hρ.1 x y
-  by_cases hadj : G.Adj x y
-  · rw [ite_eq_left hadj]
-    rcases h0.eq_or_lt with h | h
-    · rw [← h]
-      split_ifs <;> linarith
-    · obtain ⟨hx, hy⟩ := resid_pos_of_plan_pos hρ h
-      rcases hK x y hx hy hadj with hxK | hyK
-      · rw [ite_eq_left hxK]
-        split_ifs <;> linarith
-      · rw [ite_eq_left hyK]
-        split_ifs <;> linarith
-  · rw [ite_eq_right hadj]
-    split_ifs <;> linarith
-
 /-- **The edges outside a set `I` of hubs, block by block.** If every edge between supply and demand
 outside `I` joins vertices of the same block, those edges carry at most, block by block, the smaller of
 the capped supply and the capped demand. -/
@@ -463,59 +433,6 @@ lemma outside_le_blocks {β : Type*} [DecidableEq β]
         · rw [ite_eq_right hbx]
   rw [hout]
   exact Finset.sum_le_sum fun l _ => hl l
-
-/-- **The componentwise bound.** Remove a set `I` of hubs (in the paper, `I = {i, j}`); if every edge
-between supply and demand outside `I` joins vertices of the same block, then the mass along edges is
-at most the capped flows at `I` plus, block by block, the smaller of the capped supply and the
-capped demand. -/
-theorem adjMass_le_blocks {β : Type*} [DecidableEq β]
-    (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (I : Finset V) (b : V → β)
-    (hb : ∀ x y, 0 < resP μ i j x → 0 < resN μ i j y → G.Adj x y → x ∉ I → y ∉ I → b x = b y) :
-    adjMass G ρ ≤ ∑ x ∈ I, capS G μ i j x + ∑ y ∈ I, capD G μ i j y
-      + ∑ l ∈ Finset.univ.image b,
-          min (∑ x ∈ Finset.univ.filter (fun x => b x = l ∧ x ∉ I), capS G μ i j x)
-            (∑ y ∈ Finset.univ.filter (fun y => b y = l ∧ y ∉ I), capD G μ i j y) := by
-  -- split every edge term into the parts at `I` and the part outside
-  have hsplit : adjMass G ρ ≤ ∑ x, ∑ y, (if x ∈ I ∧ G.Adj x y then ρ x y else 0)
-      + ∑ x, ∑ y, (if y ∈ I ∧ G.Adj x y then ρ x y else 0)
-      + ∑ x, ∑ y, (if G.Adj x y ∧ x ∉ I ∧ y ∉ I then ρ x y else 0) := by
-    unfold adjMass
-    rw [← Finset.sum_add_distrib, ← Finset.sum_add_distrib]
-    refine Finset.sum_le_sum fun x _ => ?_
-    rw [← Finset.sum_add_distrib, ← Finset.sum_add_distrib]
-    refine Finset.sum_le_sum fun y _ => ?_
-    have h0 := hρ.1 x y
-    by_cases hadj : G.Adj x y <;> by_cases hx : x ∈ I <;> by_cases hy : y ∈ I <;>
-      simp [hadj, hx, hy, h0]
-  -- the parts at `I`
-  have hI1 : ∑ x, ∑ y, (if x ∈ I ∧ G.Adj x y then ρ x y else 0) ≤ ∑ x ∈ I, capS G μ i j x := by
-    have h : ∀ x, ∑ y, (if x ∈ I ∧ G.Adj x y then ρ x y else 0)
-        ≤ if x ∈ I then capS G μ i j x else 0 := by
-      intro x
-      by_cases hx : x ∈ I
-      · simp only [hx, true_and, ite_true]
-        exact row_adj_le_capS hρ x
-      · simp [hx]
-    calc _ ≤ ∑ x, (if x ∈ I then capS G μ i j x else 0) := Finset.sum_le_sum fun x _ => h x
-      _ = ∑ x ∈ I, capS G μ i j x := by rw [Finset.sum_ite_mem, Finset.univ_inter]
-  have hI2 : ∑ x, ∑ y, (if y ∈ I ∧ G.Adj x y then ρ x y else 0) ≤ ∑ y ∈ I, capD G μ i j y := by
-    rw [Finset.sum_comm]
-    have h : ∀ y, ∑ x, (if y ∈ I ∧ G.Adj x y then ρ x y else 0)
-        ≤ if y ∈ I then capD G μ i j y else 0 := by
-      intro y
-      by_cases hy : y ∈ I
-      · simp only [hy, true_and, ite_true]
-        exact col_adj_le_capD hρ y
-      · simp [hy]
-    calc _ ≤ ∑ y, (if y ∈ I then capD G μ i j y else 0) := Finset.sum_le_sum fun y _ => h y
-      _ = ∑ y ∈ I, capD G μ i j y := by rw [Finset.sum_ite_mem, Finset.univ_inter]
-  calc adjMass G ρ
-      ≤ _ := hsplit
-    _ ≤ ∑ x ∈ I, capS G μ i j x + ∑ y ∈ I, capD G μ i j y
-          + ∑ l ∈ Finset.univ.image b,
-              min (∑ x ∈ Finset.univ.filter (fun x => b x = l ∧ x ∉ I), capS G μ i j x)
-                (∑ y ∈ Finset.univ.filter (fun y => b y = l ∧ y ∉ I), capD G μ i j y) :=
-        add_le_add (add_le_add hI1 hI2) (outside_le_blocks hρ I b hb)
 
 /-! ### The sharper bound at `{i, j}` (Theorem 5.3 (iv)) -/
 
@@ -842,15 +759,5 @@ lemma nbr_of_degree_eq {y : V} (hyj : G.Adj j y)
   rw [Finset.card_insert_of_notMem hw_notin, Finset.card_insert_of_notMem hj_notin,
     SimpleGraph.card_neighborFinset_eq_degree] at hcard
   omega
-
-/-! ### Algorithm 1 with the certificate -/
-
-/-- **Algorithm 1 with the certificate**: with any valid interval on every edge (for instance the
-certificate of Theorem 5.3) and the exact curvature on the edges it leaves undecided,
-certify-then-solve returns exactly the edges below the threshold. -/
-theorem certifyThenSolve_tq {ι : Type*} (E : Finset ι) (lo up κ : ι → ℝ) (ϑ : ℝ)
-    (hlo : ∀ e ∈ E, lo e ≤ κ e) (hup : ∀ e ∈ E, κ e ≤ up e) :
-    certifyThenSolve E lo up up κ ϑ = E.filter fun e => κ e < ϑ :=
-  certifyThenSolve_eq E lo up up κ ϑ hlo hup hup
 
 end OllivierBF

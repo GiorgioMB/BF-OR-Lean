@@ -1,15 +1,13 @@
 /-
   The results of *From Proxy to Certificate: Ollivier–Ricci Bounds from the Building Blocks of
   Balanced Forman Curvature* in the form in which the paper states them, with the endpoints labelled
-  so that `d_i ≤ d_j` where it matters. Appendix B of the paper lists the correspondence.
-
-  Only Corollary 5.4 takes a published result as a hypothesis: Theorems 1.1 and 5.5 of Bourne et al.
-  (`BourneLinear`). The distance-`3` certificates take `ThreeApart`, a property of the metric that the
-  shortest-path distance has (`threeApart_dist`).
+  so that `d_i ≤ d_j` where it matters: Proposition 4.2 and Theorem 5.3 (Theorem 5.2 is in
+  `ExactRange`). Appendix B of the paper lists the correspondence. The distance-`3` certificates take
+  `ThreeApart`, a property of the metric that the shortest-path distance has (`threeApart_dist`).
 -/
 module
 
-public import OllivierBF.Idleness
+public import OllivierBF.TQ
 
 @[expose] public section
 
@@ -85,15 +83,6 @@ theorem tq_upper_paper (hd : GraphMetric G d) (h3 : ThreeApart G d)
     · exact Or.inl h
     · exact Or.inr (hCk w h hw)
 
-/-- **Theorem 5.3 (ii)** with the weight of a vertex cover of the supply–demand edges for `η`. -/
-theorem tq_upper_cover_paper (hd : GraphMetric G d) (h3 : ThreeApart G d)
-    (hi : OneStepAt G μ i) (hj : OneStepAt G μ j) {K : Finset V} (hK : CoversResid G μ i j K)
-    {X Y : Finset V} (hX : IsFarX G i j X) (hY : IsFarY G i j Y) :
-    cORm d μ i j ≤ 1 - 2 * resMass μ i j + (∑ x ∈ K, resP μ i j x + ∑ y ∈ K, resN μ i j y)
-      - max 0 (max (∑ x ∈ X, resP μ i j x - ∑ y ∈ overlap (G := G) i j, resN μ i j y)
-        (∑ y ∈ Y, resN μ i j y - ∑ x ∈ overlap (G := G) i j, resP μ i j x)) :=
-  tq_upper_paper hd h3 hi hj (fun _ hρ => adjMass_le_cover hρ hK) hX hY
-
 /-- **Theorem 5.3 (ii) and (iv)** with the componentwise bound for `η`: for every `B` that bounds
 `F + min{O_i, |r(i)| − F} + min{O_j, |r(j)| − F}` on `[0, F_ij]`, in particular its maximum, `B` plus,
 over blocks that no supply–demand edge outside `{i, j}` crosses, the smaller of the capped supply and the
@@ -116,33 +105,5 @@ theorem tq_upper_blocks_paper {β : Type*} [DecidableEq β] (hd : GraphMetric G 
       - max 0 (max (∑ x ∈ X, resP μ i j x - ∑ y ∈ overlap (G := G) i j, resN μ i j y)
         (∑ y ∈ Y, resN μ i j y - ∑ x ∈ overlap (G := G) i j, resP μ i j x)) :=
   tq_upper_paper hd h3 hi hj (fun _ hρ => adjMass_le_blocks_ij hij.ne hρ b hb hB) hX hY
-
-/-- **Theorem 5.3 for the lazy measure**, the running example of the paper. -/
-theorem tq_lazy_paper (hd : GraphMetric G d) (h3 : ThreeApart G d) (hij : G.Adj i j)
-    {π : V → V → ℝ} (hπ : IsSubPlan (resP (mLazy G) i j) (resN (mLazy G) i j) π)
-    {c : V → V → ℝ} (hc : ∀ x y, 0 < π x y → d x y ≤ c x y)
-    {K : Finset V} (hK : CoversResid G (mLazy G) i j K)
-    {X Y : Finset V} (hX : IsFarX G i j X) (hY : IsFarY G i j Y) :
-    1 - 3 * resMass (mLazy G) i j + ∑ x, ∑ y, (3 - c x y) * π x y ≤ cOR G d i j ∧
-      cOR G d i j ≤ 1 - 2 * resMass (mLazy G) i j
-        + (∑ x ∈ K, resP (mLazy G) i j x + ∑ y ∈ K, resN (mLazy G) i j y)
-        - max 0 (max (∑ x ∈ X, resP (mLazy G) i j x
-              - ∑ y ∈ overlap (G := G) i j, resN (mLazy G) i j y)
-            (∑ y ∈ Y, resN (mLazy G) i j y - ∑ x ∈ overlap (G := G) i j, resP (mLazy G) i j x)) :=
-  ⟨tq_lower_paper hd hij (oneStepAt_mLazy hij) (oneStepAt_mLazy hij.symm) hπ hc,
-    tq_upper_cover_paper hd h3 (oneStepAt_mLazy hij) (oneStepAt_mLazy hij.symm) hK hX hY⟩
-
-/-- **Corollary 5.4.** On `[w_j, 1]`, `κ_p = (1 − p)/(1 − w_j) · κ_{w_j}`; at idleness `w_j` the
-residual vanishes at `i` and has no demand on `S`. -/
-theorem idleness_paper (hB : BourneLinear G d) (hij : G.Adj i j) (hle : ρ G i ≤ ρ G j)
-    {p : ℝ} (hp0 : w G j ≤ p) (hp1 : p ≤ 1) :
-    cORp G d p i j = (1 - p) / (1 - w G j) * cORp G d (w G j) i j ∧
-      resP (mp G (w G j)) i j i = 0 ∧ resN (mp G (w G j)) i j i = 0 ∧
-      (∀ k ∈ overlap (G := G) i j, resN (mp G (w G j)) i j k = 0) := by
-  have hw := w_eq_one_div_ρmax (G := G) hle
-  have hlift := idleness_lift hB hij (p := p) (by rw [← hw]; exact hp0) hp1
-  rw [← hw] at hlift
-  exact ⟨hlift, (resid_idle_at_i hij).1, (resid_idle_at_i hij).2,
-    fun _ hk => resid_idle_overlap hij hle hk⟩
 
 end OllivierBF

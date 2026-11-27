@@ -52,39 +52,6 @@ theorem le_W1 {b : ℝ} (hne : ∃ π, IsCoupling μ ν π)
   obtain ⟨π₀, h₀⟩ := hne
   exact le_csInf ⟨_, π₀, h₀, rfl⟩ (by rintro _ ⟨π, hπ, rfl⟩; exact h π hπ)
 
-/-- Transposed couplings. -/
-lemma IsCoupling.swap (h : IsCoupling μ ν π) : IsCoupling ν μ (fun x y => π y x) :=
-  ⟨fun x y => h.1 y x, fun x => h.2.2 x, fun y => h.2.1 y⟩
-
-lemma cost_swap (hds : ∀ x y, d x y = d y x) :
-    cost d (fun x y => π y x) = cost d π := by
-  unfold cost
-  rw [Finset.sum_comm]
-  refine Finset.sum_congr rfl fun x _ => Finset.sum_congr rfl fun y _ => ?_
-  rw [hds]
-
-theorem W1_comm (hd : ∀ x y, 0 ≤ d x y) (hds : ∀ x y, d x y = d y x) :
-    W1 d μ ν = W1 d ν μ := by
-  have aux : ∀ μ ν : V → ℝ, (∃ π, IsCoupling μ ν π) → W1 d ν μ ≤ W1 d μ ν := by
-    intro μ ν hne
-    apply le_W1 hne
-    intro π hπ
-    calc W1 d ν μ ≤ cost d (fun x y => π y x) := W1_le_cost hd hπ.swap
-      _ = cost d π := cost_swap hds
-  by_cases h1 : ∃ π, IsCoupling μ ν π
-  · have h2 : ∃ π, IsCoupling ν μ π := by
-      obtain ⟨π, hπ⟩ := h1; exact ⟨_, hπ.swap⟩
-    exact le_antisymm (aux ν μ h2) (aux μ ν h1)
-  · have h2 : ¬ ∃ π, IsCoupling ν μ π := by
-      rintro ⟨π, hπ⟩; exact h1 ⟨_, hπ.swap⟩
-    have e1 : {π | IsCoupling μ ν π} = ∅ := by
-      ext π; simp only [Set.mem_ofPred_eq, Set.mem_empty_iff_false, iff_false]
-      exact fun h => h1 ⟨π, h⟩
-    have e2 : {π | IsCoupling ν μ π} = ∅ := by
-      ext π; simp only [Set.mem_ofPred_eq, Set.mem_empty_iff_false, iff_false]
-      exact fun h => h2 ⟨π, h⟩
-    simp only [W1, e1, e2, Set.image_empty]
-
 end basic
 
 /-! ## Building couplings -/
@@ -189,39 +156,7 @@ lemma cost_diag {κ : V → ℝ} (hself : ∀ x, d x x = 0) :
 
 end build
 
-/-! ## Joint convexity -/
-
-section mix
-
-variable {d : V → V → ℝ}
-
-/-- `W1` is jointly convex (convex combination of two pairs). -/
-theorem W1_mix_le (hd : ∀ x y, 0 ≤ d x y) {μ₁ ν₁ μ₂ ν₂ : V → ℝ} {θ : ℝ}
-    (hθ0 : 0 ≤ θ) (hθ1 : θ ≤ 1)
-    (h₁ : ∃ π, IsCoupling μ₁ ν₁ π) (h₂ : ∃ π, IsCoupling μ₂ ν₂ π) :
-    W1 d (fun x => (1 - θ) * μ₁ x + θ * μ₂ x) (fun y => (1 - θ) * ν₁ y + θ * ν₂ y)
-      ≤ (1 - θ) * W1 d μ₁ ν₁ + θ * W1 d μ₂ ν₂ := by
-  apply le_of_forall_pos_lt_add
-  intro ε hε
-  have hne₁ : (cost d '' {π | IsCoupling μ₁ ν₁ π}).Nonempty := by
-    obtain ⟨π, hπ⟩ := h₁; exact ⟨_, π, hπ, rfl⟩
-  have hne₂ : (cost d '' {π | IsCoupling μ₂ ν₂ π}).Nonempty := by
-    obtain ⟨π, hπ⟩ := h₂; exact ⟨_, π, hπ, rfl⟩
-  obtain ⟨_, ⟨π₁, hπ₁, rfl⟩, hlt₁⟩ := exists_lt_of_csInf_lt hne₁ (lt_add_of_pos_right (W1 d μ₁ ν₁) hε)
-  obtain ⟨_, ⟨π₂, hπ₂, rfl⟩, hlt₂⟩ := exists_lt_of_csInf_lt hne₂ (lt_add_of_pos_right (W1 d μ₂ ν₂) hε)
-  have hc := IsCoupling.combo (sub_nonneg.2 hθ1) hθ0 hπ₁ hπ₂
-  calc W1 d _ _ ≤ cost d (fun x y => (1 - θ) * π₁ x y + θ * π₂ x y) := W1_le_cost hd hc
-    _ = (1 - θ) * cost d π₁ + θ * cost d π₂ := cost_combo π₁ π₂ _ _
-    _ < (1 - θ) * W1 d μ₁ ν₁ + θ * W1 d μ₂ ν₂ + ε := by
-      rcases hθ0.eq_or_lt with h0 | h0
-      · subst h0; simp only [sub_zero, one_mul, zero_mul, add_zero]; linarith
-      rcases hθ1.eq_or_lt with h1 | h1
-      · subst h1; simp only [sub_self, zero_mul, zero_add, one_mul]; linarith
-      nlinarith [mul_lt_mul_of_pos_left hlt₁ (sub_pos.2 h1), mul_lt_mul_of_pos_left hlt₂ h0]
-
-end mix
-
-/-! ## The overlap lower bound (`W1 ≥ mass not shared`) -/
+/-! ## Diagonal entries -/
 
 section overlap
 
@@ -235,35 +170,6 @@ lemma IsCoupling.diag_le {μ ν : V → ℝ} {π : V → V → ℝ} (h : IsCoupl
     exact Finset.single_le_sum (f := fun y => π x y) (fun y _ => h.1 x y) (Finset.mem_univ x)
   · rw [← h.2.2 x]
     exact Finset.single_le_sum (f := fun y => π y x) (fun y _ => h.1 y x) (Finset.mem_univ x)
-
-/-- Every coupling costs at least its off-diagonal mass when distinct points are at
-distance at least one. -/
-lemma cost_ge_offdiag {μ ν : V → ℝ} {π : V → V → ℝ} (h : IsCoupling μ ν π)
-    (hself : ∀ x, d x x = 0) (hone : ∀ x y, x ≠ y → 1 ≤ d x y) :
-    ∑ x, (μ x - π x x) ≤ cost d π := by
-  unfold cost
-  refine Finset.sum_le_sum fun x _ => ?_
-  have h1 : π x x + ∑ y ∈ univ.erase x, π x y = ∑ y, π x y :=
-    Finset.add_sum_erase _ (fun y => π x y) (Finset.mem_univ x)
-  have h2 : d x x * π x x + ∑ y ∈ univ.erase x, d x y * π x y = ∑ y, d x y * π x y :=
-    Finset.add_sum_erase _ (fun y => d x y * π x y) (Finset.mem_univ x)
-  have h3 : ∑ y ∈ univ.erase x, π x y ≤ ∑ y ∈ univ.erase x, d x y * π x y :=
-    Finset.sum_le_sum fun y hy => by
-      have hxy : x ≠ y := fun e => (Finset.mem_erase.1 hy).1 e.symm
-      nlinarith [hone x y hxy, h.1 x y]
-  rw [hself x, zero_mul, zero_add] at h2
-  linarith [h.2.1 x]
-
-/-- `W1(μ,ν) ≥ m − Σ min(μ,ν)` for measures of mass `m` (here `m = Σ μ`). -/
-theorem W1_ge_overlap {μ ν : V → ℝ} (hne : ∃ π, IsCoupling μ ν π)
-    (hself : ∀ x, d x x = 0) (hone : ∀ x y, x ≠ y → 1 ≤ d x y) :
-    ∑ x, μ x - ∑ x, min (μ x) (ν x) ≤ W1 d μ ν := by
-  apply le_W1 hne
-  intro π hπ
-  calc ∑ x, μ x - ∑ x, min (μ x) (ν x) = ∑ x, (μ x - min (μ x) (ν x)) := by
-        rw [Finset.sum_sub_distrib]
-    _ ≤ ∑ x, (μ x - π x x) := Finset.sum_le_sum fun x _ => by linarith [hπ.diag_le x]
-    _ ≤ cost d π := cost_ge_offdiag hπ hself hone
 
 end overlap
 
