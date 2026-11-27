@@ -10,3 +10,4 @@ public import OllivierBF.AttainableRange
 public import OllivierBF.ResidualsFull
 public import OllivierBF.SavingsMax
 public import OllivierBF.RangeSavings
+public import OllivierBF.MaxFlow

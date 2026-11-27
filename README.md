@@ -35,7 +35,9 @@ lake build
 | Theorem 5.2, ends `1 − 3τ + σ*_∅` and `1 − 3τ + max_F σ*_F` | `attainable_range_savings_paper` | `RangeSavings` |
 | Theorem 5.3 (i) | `tq_lower_paper` | `PaperTQ` |
 | Theorem 5.3 (ii) | `tq_upper_paper` | `PaperTQ` |
+| Theorem 5.3 (ii), `η` the maximum flow | `tq_upper_maxFlow_paper` | `MaxFlow` |
 | Theorem 5.3 (iv), the bound `η'` | `tq_upper_blocks_paper` | `PaperTQ` |
+| Theorem 5.3 (iv), `η' ≥ η` | `maxFlow_le_blocks_paper` | `MaxFlow` |
 
 The theorems hold for every distance that is a graph metric (`GraphMetric`) and, where a pair must
 be at distance `3`, separates vertices without short paths (`ThreeApart`); the shortest-path
@@ -66,3 +68,4 @@ Not formalized: part (iii) of Theorem 5.3 and the running time in (iv), and the 
 | `PaperTQ` | Proposition 4.2 and Theorem 5.3 as the paper states them |
 | `AttainableRange` | Theorem 5.2 |
 | `RangeSavings` | the residual reduction for the charged distance, Theorem 5.2 in savings form |
+| `MaxFlow` | `η` as a maximum flow, Theorem 5.3 (ii) and (iv) with it |
