@@ -40,16 +40,16 @@ variable (G : SimpleGraph V) [DecidableRel G.Adj] (i j : V)
 def listed : Finset V := insert i (insert j (uniq G i j ∪ common G i j))
 
 /-- The vertices whose degrees are known: `listed` and everything in its lists. -/
-def known : Finset V := listed G i j ∪ (listed G i j).biUnion G.neighborFinset
+def known : Finset V := listed G i j ∪ (listed G i j).biUnion (fun v => G.neighborFinset v)
 
 /-- `Z`: the vertices outside `N[i] ∪ N[j]` adjacent to `U_i`. -/
 def outsideZ : Finset V :=
-  ((uniq G i j).biUnion G.neighborFinset).filter
+  ((uniq G i j).biUnion (fun v => G.neighborFinset v)).filter
     (fun z => z ≠ i ∧ z ≠ j ∧ ¬ G.Adj i z ∧ ¬ G.Adj j z)
 
 /-- The candidate pairs `{u, y}`: `y ∈ U_j` and `u ∈ (U_j ∪ Z) \ {y}`. -/
 def cand : Finset (Sym2 V) :=
-  (((uniq G j i ∪ outsideZ G i j) ×ˢ uniq G j i).filter (fun p => p.1 ≠ p.2)).image Sym2.mk
+  (((uniq G j i ∪ outsideZ G i j) ×ˢ uniq G j i).filter (fun p => p.1 ≠ p.2)).image (fun p => s(p.1, p.2))
 
 /-- The number of listed edges at `v`, that is, of its edges to vertices of `listed`. -/
 def listedDeg (v : V) : ℕ := ((listed G i j).filter (G.Adj v)).card
@@ -252,7 +252,8 @@ lemma W1_mono {c c' : V → V → ℝ} {α β : V → ℝ} (hc : ∀ x y, 0 ≤ 
 lemma kappaF_mono {μ : V → V → ℝ} (hi : OneStepAt G μ i) (hj : OneStepAt G μ j)
     {F F' : Finset (Sym2 V)} (h : F ⊆ F') : kappaF G i j μ F ≤ kappaF G i j μ F' := by
   unfold kappaF cORm
-  have := W1_mono (α := μ i) (β := μ j) (chargedDist_nonneg F') (chargedDist_anti h)
+  have := W1_mono (c := chargedDist G i j F') (c' := chargedDist G i j F) (α := μ i) (β := μ j)
+    (chargedDist_nonneg F') (chargedDist_anti h)
     (exists_coupling_prob hi.nonneg hj.nonneg hi.mass hj.mass)
   linarith
 
@@ -482,7 +483,7 @@ theorem W1_transfer (e : V → V') (K : Finset V) (he : Set.InjOn e K) {α β : 
     {c : V → V → ℝ} {c' : V' → V' → ℝ} (hc : ∀ x y, 0 ≤ c x y) (hc' : ∀ x y, 0 ≤ c' x y)
     (hcc : ∀ x y, 0 < α x → 0 < β y → c' (e x) (e y) = c x y) :
     W1 c' α' β' = W1 c α β := by
-  haveI : Nonempty V := by
+  have : Nonempty V := by
     rcases isEmpty_or_nonempty V with hV | hV
     · exfalso
       rw [Finset.univ_eq_empty, Finset.sum_empty] at hα1
@@ -579,12 +580,10 @@ theorem W1_transfer (e : V → V') (K : Finset V) (he : Set.InjOn e K) {α β : 
     rw [hsumV (fun x => ∑ y, c x y * π x y) fun x hx =>
       Finset.sum_eq_zero fun y _ => by rw [hπrow π hπ x y hx, mul_zero]]
     refine Finset.sum_congr rfl fun x hx => ?_
-    dsimp only
     rw [hsum (fun y' => c' (e x) y' * push π (e x) y') fun y' hy' => by
       rw [hpush_out π (e x) y' (Or.inr hy'), mul_zero]]
     rw [hsumV (fun y => c x y * π x y) fun y hy => by rw [hπcol π hπ x y hy, mul_zero]]
     refine Finset.sum_congr rfl fun y hy => ?_
-    dsimp only
     rw [hpush_e π x hx y hy]
     rcases (hπ.1 x y).lt_or_eq with hpos | hzero
     · obtain ⟨hαx, hβy⟩ := hpos_row hπ x y hpos
@@ -627,12 +626,10 @@ theorem W1_transfer (e : V → V') (K : Finset V) (he : Set.InjOn e K) {α β : 
     rw [hsum (fun x' => ∑ y', c' x' y' * π' x' y') fun x' hx' =>
       Finset.sum_eq_zero fun y' _ => by rw [hπ'row π' hπ' x' y' hx', mul_zero]]
     refine Finset.sum_congr rfl fun x hx => ?_
-    dsimp only
     rw [hsumV (fun y => c x y * pull π' x y) fun y hy => by rw [hpull_out π' x y (Or.inr hy), mul_zero]]
     rw [hsum (fun y' => c' (e x) y' * π' (e x) y') fun y' hy' => by
       rw [hπ'col π' hπ' (e x) y' hy', mul_zero]]
     refine Finset.sum_congr rfl fun y hy => ?_
-    dsimp only
     rw [hpull_in π' x hx y hy]
     rcases (hπ'.1 (e x) (e y)).lt_or_eq with hpos | hzero
     · obtain ⟨hαx', hβy'⟩ := hpos_row hπ' (e x) (e y) hpos
@@ -884,8 +881,8 @@ theorem realize_connected (hij : G.Adj i j) {F : Finset (Sym2 V)} (hF : Admissib
     intro v hv
     rcases Finset.mem_union.mp hv with hvl | hvn
     · rw [← embed_of_known hv]; exact hL v hvl
-    · obtain ⟨w, hwl, hwv⟩ := Finset.mem_biUnion.mp hvn
-      rw [SimpleGraph.mem_neighborFinset] at hwv
+    · simp only [Finset.mem_biUnion, SimpleGraph.mem_neighborFinset] at hvn
+      obtain ⟨w, hwl, hwv⟩ := hvn
       have hadj := (hc.adj_iff hwl hv).mpr hwv
       rw [embed_of_known hv] at hadj
       exact hadj.reachable.symm.trans (hL w hwl)
@@ -895,7 +892,7 @@ theorem realize_connected (hij : G.Adj i j) {F : Finset (Sym2 V)} (hF : Admissib
     · have hadj : (realize G i j F).Adj (Sum.inl ⟨v, hv⟩) (Sum.inr ⟨⟨v, hv⟩, k⟩) :=
         realize_adj_inl_inr.mpr rfl
       exact hadj.reachable.symm.trans (hK v hv)
-  haveI : Nonempty (RealV G i j F) := ⟨r⟩
+  have : Nonempty (RealV G i j F) := ⟨r⟩
   exact ⟨fun x y => (hall x).trans (hall y).symm⟩
 
 /-- The pairs of `realize F` are `F`. -/
