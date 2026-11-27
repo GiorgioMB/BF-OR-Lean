@@ -1,15 +1,16 @@
 /-
-  The triangle–quadrangle certificate (Theorem 5.3 of the paper), for every one-step measure.
+  The triangle–quadrangle bound (Theorem 5.3 of the paper), for every one-step measure.
 
   * (i) `tq_lower`: every partial plan of the residuals, with charged distances at least the true
     ones on its support, gives `κ ≥ 1 − 3τ + Σ (3 − c) π`.
   * (ii) `tq_upper`: if `η` bounds the mass that couplings of the residuals move along edges, and
-    `X₃`, `Y₃` are certified at distance `3` from the opposite residual outside `S`, then
+    `X₃`, `Y₃` are at distance `3` from the opposite residual outside `S`, then
     `κ ≤ 1 − 2τ + η − D₃`.
   * (iv) the bound `η'`: the flow along `(i, j)` and the capacities left at `i` and `j`, and, outside
     `{i, j}`, the smaller of the capped supply and the capped demand of every block
-    (`adjMass_le_blocks_ij`). `far_of_closedX` and `far_of_closedY` certify `X₃` and `Y₃` from the
-    neighbourhoods, using `ThreeApart`, which the shortest-path distance satisfies (`threeApart_dist`).
+    (`adjMass_le_blocks_ij`). `far_of_closedX` and `far_of_closedY` deduce from the
+    neighbourhoods that `X₃` and `Y₃` are at distance `3`, using `ThreeApart`, which the
+    shortest-path distance satisfies (`threeApart_dist`).
 -/
 module
 
@@ -569,7 +570,7 @@ lemma sum_sum_snd_eq (g : V → V → ℝ) (a : V) (A : Finset V) :
   · intro h
     exact absurd (Finset.mem_univ a) h
 
-/-- An edge at `{i, j}` is `(i, j)`, `(j, i)`, or an edge at exactly one of `i`, `j`. -/
+/-- An edge at `{i, j}` is `(i, j)`, `(j, i)`, or an edge at only one of `i`, `j`. -/
 lemma ite_at_ij (hij : i ≠ j) (g : V → V → ℝ) (x y : V) :
     (if G.Adj x y ∧ (x ∈ ({i, j} : Finset V) ∨ y ∈ ({i, j} : Finset V)) then g x y else 0)
       = (if x = i ∧ (y = j ∧ G.Adj x y) then g x y else 0)
@@ -701,7 +702,7 @@ theorem adjMass_le_blocks_ij {β : Type*} [DecidableEq β] (hij : i ≠ j)
             (∑ y ∈ Finset.univ.filter (fun y => b y = l ∧ y ∉ ({i, j} : Finset V)), capD G μ i j y) :=
         add_le_add hat (outside_le_blocks hρ ({i, j} : Finset V) b hb)
 
-/-! ### Certifying distance `3` from the neighbourhoods -/
+/-! ### Distance `3` from the neighbourhoods -/
 
 /-- A vertex of `U_i` without cross edges, all of whose neighbours are `i` or have no neighbour in
 `U_j`, is at distance `3` from every vertex of `U_j`. -/
@@ -735,7 +736,7 @@ theorem far_of_closedY (h3 : ThreeApart G d) {y : V} (hy : y ∈ uniq G j i)
     · exact (mem_uniq.1 hx).2.2 hxw.symm
     · exact hw x hx hxw.symm
 
-/-- The degree certificate for `Y₃`: if `d_y = 1 + |N(y) ∩ C|` and `y ∼ j`, every neighbour of `y`
+/-- The degree condition for `Y₃`: if `d_y = 1 + |N(y) ∩ C|` and `y ∼ j`, every neighbour of `y`
 is `j` or a common neighbour. -/
 lemma nbr_of_degree_eq {y : V} (hyj : G.Adj j y)
     (hdeg : G.degree y = 1 + (G.neighborFinset y ∩ common G i j).card) :

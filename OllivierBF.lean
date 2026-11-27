@@ -6,4 +6,4 @@ public import OllivierBF.Residual
 public import OllivierBF.OneStep
 public import OllivierBF.TQ
 public import OllivierBF.PaperTQ
-public import OllivierBF.ExactRange
+public import OllivierBF.AttainableRange

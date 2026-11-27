@@ -1,9 +1,10 @@
 /-
-  The results of *From Proxy to Certificate: Ollivier–Ricci Bounds from the Building Blocks of
-  Balanced Forman Curvature* in the form in which the paper states them, with the endpoints labelled
-  so that `d_i ≤ d_j` where it matters: Proposition 4.2 and Theorem 5.3 (Theorem 5.2 is in
-  `ExactRange`). Appendix B of the paper lists the correspondence. The distance-`3` certificates take
-  `ThreeApart`, a property of the metric that the shortest-path distance has (`threeApart_dist`).
+  The results of *From Proxy to Guarantee: Two-Sided Ollivier–Ricci Bounds from Balanced Forman
+  Curvature* in the form in which the paper states them, with the endpoints labelled so that
+  `d_i ≤ d_j` where it matters: Proposition 4.2 and Theorem 5.3 (Theorem 5.2 is in
+  `AttainableRange`). Appendix B of the paper lists the correspondence. The distance-`3` arguments
+  take `ThreeApart`, a property of the metric that the shortest-path distance has
+  (`threeApart_dist`).
 -/
 module
 
@@ -20,8 +21,8 @@ namespace OllivierBF
 variable {V : Type*} [Fintype V] [DecidableEq V]
 
 /-- The vertices `X₃` of Theorem 5.3 (ii): vertices of `U_i` without cross edges, all of whose
-neighbours are `i` or have no neighbour in `U_j`. (The paper's `X₃`, defined from the building
-blocks, satisfies this.) -/
+neighbours are `i` or have no neighbour in `U_j`. (The paper's `X₃`, defined from the local
+data, satisfies this.) -/
 def IsFarX (G : SimpleGraph V) [DecidableRel G.Adj] (i j : V) (X : Finset V) : Prop :=
   ∀ x ∈ X, x ∈ uniq G i j ∧ (∀ y ∈ uniq G j i, ¬ G.Adj x y) ∧
     ∀ w, G.Adj x w → w = i ∨ ∀ y ∈ uniq G j i, ¬ G.Adj w y

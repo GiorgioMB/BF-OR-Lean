@@ -1,21 +1,21 @@
 /-
   Theorem 5.2 of the paper: the full range of the curvature over the graphs consistent with the
-  building blocks of an edge.
+  local data of an edge.
 
-  The building blocks of `(i, j)` are the lists of the vertices of `listed` (`i`, `j`, `U_i`, `C`) and
-  the degrees of the vertices of `known` (`listed` and everything in its lists). A graph `G'` on any
-  vertex type is consistent with them through `e : V → V'`, injective on `known`, if the vertices of
-  `listed` have the same lists and those of `known` the same degrees (`Consistent`); the measures of
-  `G'` at `e i` and `e j` are those of `G`, carried by `e` (`Agrees`), which is what locality gives.
-  A set `F` of candidate pairs `{u, y}` (`y ∈ U_j`, `u ∈ (U_j ∪ Z) \ {y}`) is admissible if every
-  vertex lies in at most its free degree of pairs; `chargedDist F` is the distance of the theorem and
-  `kappaF F = 1 − W₁` with it.
+  The local data of `(i, j)` consists of the lists of the vertices of `listed` (`i`, `j`, `U_i`,
+  `C`) and the degrees of the vertices of `known` (`listed` and everything in its lists). A graph
+  `G'` on any vertex type is consistent with it through `e : V → V'`, injective on `known`, if the
+  vertices of `listed` have the same lists and those of `known` the same degrees (`Consistent`); the
+  measures of `G'` at `e i` and `e j` are those of `G`, carried by `e` (`Agrees`), which is what
+  locality gives. A set `F` of candidate pairs `{u, y}` (`y ∈ U_j`, `u ∈ (U_j ∪ Z) \ {y}`) is
+  admissible if every vertex lies in at most its free degree of pairs; `chargedDist F` is the
+  distance of the theorem and `kappaF F = 1 − W₁` with it.
 
   * `range_bounds`: a consistent graph, with a metric that is a graph metric and separates vertices
     without short paths, has curvature `kappaF` of its own pairs, between `kappaF ∅` and `kappaMax`;
   * `realize F`: the listed edges, the pairs of `F`, and pendant vertices that complete the degrees,
     connected and consistent, with curvature `kappaF F` (`realize_kappa`);
-  * `exact_range_paper`: Theorem 5.2.
+  * `attainable_range_paper`: Theorem 5.2.
 -/
 module
 
@@ -34,7 +34,7 @@ universe u
 variable {V : Type u} [Fintype V] [DecidableEq V]
 variable (G : SimpleGraph V) [DecidableRel G.Adj] (i j : V)
 
-/-! ### The building blocks -/
+/-! ### The local data -/
 
 /-- The vertices whose lists are known: `i`, `j`, `U_i` and `C`. -/
 def listed : Finset V := insert i (insert j (uniq G i j ∪ common G i j))
@@ -99,7 +99,7 @@ noncomputable def kappaMax (μ : V → V → ℝ) : ℝ :=
 
 /-! ### Consistent graphs -/
 
-/-- `G'` is consistent with the building blocks of `(i, j)` in `G` through `e`. -/
+/-- `G'` is consistent with the local data of `(i, j)` in `G` through `e`. -/
 structure Consistent {V' : Type u} [Fintype V'] [DecidableEq V'] (G' : SimpleGraph V')
     [DecidableRel G'.Adj] (e : V → V') : Prop where
   inj : Set.InjOn e (known G i j)
@@ -750,7 +750,7 @@ lemma realize_not_adj_inr_inr {F : Finset (Sym2 V)} {a b : Σ v : {v // v ∈ kn
     ¬ (realize G i j F).Adj (Sum.inr a) (Sum.inr b) := by
   simp [realize, SimpleGraph.fromRel_adj, realRel]
 
-/-- `realize F` is consistent with the building blocks. -/
+/-- `realize F` is consistent with the local data. -/
 theorem realize_consistent {F : Finset (Sym2 V)} (hF : Admissible G i j F) :
     Consistent G i j (realize G i j F) (embed G i j F) where
   inj := by
@@ -931,11 +931,11 @@ theorem realize_kappa {μ : V → V → ℝ} (hij : G.Adj i j) (hi : OneStepAt G
 
 /-! ### Theorem 5.2 -/
 
-/-- **Theorem 5.2 (exact range).** Over the connected graphs consistent with the building blocks of
+/-- **Theorem 5.2 (attainable range).** Over the connected graphs consistent with the local data of
 `(i, j)`, with their shortest-path distance and measures that agree with `μ` (locality), the curvature
 ranges over `[kappaF ∅, kappaMax]`: every such graph lies in it, the graph of listed edges with pendant
 vertices attains the lower end, and some admissible `F` attains the upper end. -/
-theorem exact_range_paper {μ : V → V → ℝ} (hij : G.Adj i j) (hi : OneStepAt G μ i)
+theorem attainable_range_paper {μ : V → V → ℝ} (hij : G.Adj i j) (hi : OneStepAt G μ i)
     (hj : OneStepAt G μ j) :
     (∀ {V' : Type u} [Fintype V'] [DecidableEq V'] (G' : SimpleGraph V') [DecidableRel G'.Adj]
         (e : V → V') (μ' : V' → V' → ℝ), G'.Connected → Consistent G i j G' e →

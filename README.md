@@ -4,12 +4,12 @@
 
 A Lean 4 formalization of
 
-> Giorgio Micaletto and Tebe Nigrelli. *From Proxy to Certificate: Ollivier–Ricci Bounds from the
-> Building Blocks of Balanced Forman Curvature.* 2026.
+> Giorgio Micaletto and Tebe Nigrelli. *From Proxy to Guarantee: Two-Sided Ollivier–Ricci Bounds
+> from Balanced Forman Curvature.* 2026.
 
 For an edge of a finite simple graph and a one-step measure, the paper determines the range of the
-Ollivier–Ricci (OR) curvature over all graphs consistent with the building blocks of Balanced Forman
-curvature (Theorem 5.2), and bounds the curvature by the triangle–quadrangle certificate (Theorem 5.3),
+Ollivier–Ricci (OR) curvature over all graphs consistent with the local data of Balanced Forman
+curvature (Theorem 5.2), and bounds the curvature by the triangle–quadrangle bound (Theorem 5.3),
 through the savings form of the transport problem (Proposition 4.2). This repository proves these
 results, and only these. The experiments are in
 [Curvature-Transfer-Code](https://github.com/GiorgioMB/Curvature-Transfer-Code).
@@ -28,20 +28,20 @@ lake build
 | Paper | Lean | File |
 |---|---|---|
 | Proposition 4.2 | `savings_paper` | `PaperTQ` |
-| Theorem 5.2 | `exact_range_paper` | `ExactRange` |
+| Theorem 5.2 | `attainable_range_paper` | `AttainableRange` |
 | Theorem 5.3 (i) | `tq_lower_paper` | `PaperTQ` |
 | Theorem 5.3 (ii) | `tq_upper_paper` | `PaperTQ` |
 | Theorem 5.3 (iv), the bound `η'` | `tq_upper_blocks_paper` | `PaperTQ` |
 
-The theorems hold for every distance that is a graph metric (`GraphMetric`) and, for the certificates of
-distance `3`, separates vertices without short paths (`ThreeApart`); the shortest-path distance of a
-connected graph is both (`graphMetric_dist`, `threeApart_dist`). Theorem 5.2 ranges over the connected
-graphs, on any vertex type, consistent with the building blocks through a map injective on the known
-vertices (`Consistent`), with measures that agree with `μ` at the endpoints (`Agrees`, which is what
-locality gives). Its ends are `kappaF ∅` and `kappaMax`, the curvature with the distance of the theorem
-(`chargedDist`); `range_bounds` places every consistent graph between them, and the graph `realize F` of
-the listed edges, the pairs of `F`, and pendant vertices that complete the degrees attains `kappaF F`
-(`realize_kappa`).
+The theorems hold for every distance that is a graph metric (`GraphMetric`) and, where a pair must
+be at distance `3`, separates vertices without short paths (`ThreeApart`); the shortest-path
+distance of a connected graph is both (`graphMetric_dist`, `threeApart_dist`). Theorem 5.2 ranges
+over the connected graphs, on any vertex type, consistent with the local data through a map
+injective on the known vertices (`Consistent`), with measures that agree with `μ` at the endpoints
+(`Agrees`, which is what locality gives). Its ends are `kappaF ∅` and `kappaMax`, the curvature with
+the distance of the theorem (`chargedDist`); `range_bounds` places every consistent graph between
+them, and the graph `realize F` of the listed edges, the pairs of `F`, and pendant vertices that
+complete the degrees attains `kappaF F` (`realize_kappa`).
 
 Not formalized: part (iii) of Theorem 5.3 and the running time in (iv), and the experiments.
 
@@ -55,4 +55,4 @@ Not formalized: part (iii) of Theorem 5.3 and the running time in (iv), and the 
 | `OneStep` | one-step measures, residuals, Lemma 4.1, Proposition 4.2 |
 | `TQ` | Theorem 5.3 |
 | `PaperTQ` | Proposition 4.2 and Theorem 5.3 as the paper states them |
-| `ExactRange` | Theorem 5.2 |
+| `AttainableRange` | Theorem 5.2 |
