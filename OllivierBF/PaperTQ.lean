@@ -102,19 +102,114 @@ theorem isGreatest_maxFlow {α β : V → ℝ} (hα : ∀ x, 0 ≤ α x) (hβ : 
   rw [hG.csSup_eq]
   exact hG
 
-/-- **Theorem 5.3 (ii).** The maximum flow `η` is attained, and the bound holds for every `η'`
-that bounds the mass a coupling of the residuals moves along edges, as every `η' ≥ η` does. -/
+section flows
+
+variable {α β : V → ℝ}
+
+lemma IsSubPlan.mass_le {π : V → V → ℝ} (hπ : IsSubPlan α β π) : mass π ≤ ∑ x, α x := by
+  unfold mass
+  exact Finset.sum_le_sum fun x _ => hπ.2.1 x
+
+lemma isEdgeFlow_zero (hα : ∀ x, 0 ≤ α x) (hβ : ∀ y, 0 ≤ β y) :
+    IsEdgeFlow G α β (fun _ _ => 0) :=
+  ⟨isSubPlan_zero hα hβ, fun _ _ _ => rfl⟩
+
+lemma bddAbove_flows : BddAbove (mass '' {f | IsEdgeFlow G α β f}) :=
+  ⟨∑ x, α x, by
+    rintro _ ⟨f, hf, rfl⟩
+    have hf' : IsEdgeFlow G α β f := hf
+    exact IsSubPlan.mass_le hf'.1⟩
+
+/-- The edges of a coupling carry a flow, so a coupling moves at most `η` along edges. -/
+lemma adjMass_le_maxFlow {ρ : V → V → ℝ} (hρ : IsCoupling α β ρ) :
+    adjMass G ρ ≤ maxFlow G α β := by
+  have hf : IsEdgeFlow G α β (fun x y => if G.Adj x y then ρ x y else 0) := by
+    refine ⟨⟨fun x y => ?_, fun x => ?_, fun y => ?_⟩, fun x y h => ?_⟩
+    · show 0 ≤ (if G.Adj x y then ρ x y else 0)
+      split_ifs
+      · exact hρ.1 x y
+      · exact le_rfl
+    · show ∑ y, (if G.Adj x y then ρ x y else 0) ≤ α x
+      calc ∑ y, (if G.Adj x y then ρ x y else 0) ≤ ∑ y, ρ x y :=
+            Finset.sum_le_sum fun y _ => by
+              split_ifs
+              · exact le_rfl
+              · exact hρ.1 x y
+        _ = α x := hρ.2.1 x
+    · show ∑ x, (if G.Adj x y then ρ x y else 0) ≤ β y
+      calc ∑ x, (if G.Adj x y then ρ x y else 0) ≤ ∑ x, ρ x y :=
+            Finset.sum_le_sum fun x _ => by
+              split_ifs
+              · exact le_rfl
+              · exact hρ.1 x y
+        _ = β y := hρ.2.2 y
+    · show (if G.Adj x y then ρ x y else 0) = 0
+      rw [ite_eq_right h]
+  calc adjMass G ρ = mass (fun x y => if G.Adj x y then ρ x y else 0) := rfl
+    _ ≤ maxFlow G α β := le_csSup (bddAbove_flows (G := G) (α := α) (β := β)) ⟨_, hf, rfl⟩
+
+/-- A partial plan extends to a coupling that dominates it. -/
+lemma exists_coupling_ge {π : V → V → ℝ} (hπ : IsSubPlan α β π)
+    (hmass : ∑ x, α x = ∑ y, β y) :
+    ∃ ρ, IsCoupling α β ρ ∧ ∀ x y, π x y ≤ ρ x y := by
+  have hαr : ∀ x, 0 ≤ α x - ∑ y, π x y := fun x => sub_nonneg.2 (hπ.2.1 x)
+  have hβr : ∀ y, 0 ≤ β y - ∑ x, π x y := fun y => sub_nonneg.2 (hπ.2.2 y)
+  have hM : ∑ y, (β y - ∑ x, π x y) = ∑ x, (α x - ∑ y, π x y) := by
+    rw [Finset.sum_sub_distrib, Finset.sum_sub_distrib, hmass, Finset.sum_comm]
+  obtain ⟨σ, hσ, -⟩ := exists_piece_coupling (d := fun _ _ => (0 : ℝ)) hαr hβr rfl hM le_rfl
+    (fun _ _ _ _ => le_rfl)
+  refine ⟨fun x y => π x y + σ x y,
+    ⟨fun x y => add_nonneg (hπ.1 x y) (hσ.1 x y), fun x => ?_, fun y => ?_⟩,
+    fun x y => ?_⟩
+  · show ∑ y, (π x y + σ x y) = α x
+    calc ∑ y, (π x y + σ x y) = ∑ y, π x y + ∑ y, σ x y := Finset.sum_add_distrib
+      _ = ∑ y, π x y + (α x - ∑ y, π x y) := by rw [hσ.2.1 x]
+      _ = α x := by ring
+  · show ∑ x, (π x y + σ x y) = β y
+    calc ∑ x, (π x y + σ x y) = ∑ x, π x y + ∑ x, σ x y := Finset.sum_add_distrib
+      _ = ∑ x, π x y + (β y - ∑ x, π x y) := by rw [hσ.2.2 y]
+      _ = β y := by ring
+  · show π x y ≤ π x y + σ x y
+    linarith [hσ.1 x y]
+
+/-- Every bound on the mass that the couplings move along edges is at least `η`. -/
+lemma maxFlow_le (hα : ∀ x, 0 ≤ α x) (hβ : ∀ y, 0 ≤ β y) (hmass : ∑ x, α x = ∑ y, β y)
+    {η : ℝ} (hη : ∀ ρ, IsCoupling α β ρ → adjMass G ρ ≤ η) : maxFlow G α β ≤ η := by
+  unfold maxFlow
+  refine csSup_le ⟨_, _, isEdgeFlow_zero hα hβ, rfl⟩ ?_
+  rintro _ ⟨f, hf, rfl⟩
+  have hf' : IsEdgeFlow G α β f := hf
+  obtain ⟨ρ, hρ, hge⟩ := exists_coupling_ge hf'.1 hmass
+  calc mass f = ∑ x, ∑ y, (if G.Adj x y then f x y else 0) := by
+        unfold mass
+        refine Finset.sum_congr rfl fun x _ => Finset.sum_congr rfl fun y _ => ?_
+        split_ifs with h
+        · rfl
+        · exact hf'.2 x y h
+    _ ≤ adjMass G ρ := by
+        unfold adjMass
+        refine Finset.sum_le_sum fun x _ => Finset.sum_le_sum fun y _ => ?_
+        split_ifs
+        · exact hge x y
+        · exact le_rfl
+    _ ≤ η := hη ρ hρ
+
+end flows
+
+/-- **Theorem 5.3 (ii).** The maximum flow `η` is attained, and the bound holds for every
+`η' ≥ η`. -/
 theorem tq_upper_paper (hd : GraphMetric G d) (h3 : ThreeApart G d)
     (hi : OneStepAt G μ i) (hj : OneStepAt G μ j)
     {X Y : Finset V} (hX : IsFarX G i j X) (hY : IsFarY G i j Y) :
     IsGreatest (mass '' {f | IsEdgeFlow G (resP μ i j) (resN μ i j) f})
         (maxFlow G (resP μ i j) (resN μ i j)) ∧
-      ∀ η', (∀ ρ, IsCoupling (resP μ i j) (resN μ i j) ρ → adjMass G ρ ≤ η') →
+      ∀ η', maxFlow G (resP μ i j) (resN μ i j) ≤ η' →
         cORm d μ i j ≤ 1 - 2 * resMass μ i j + η'
           - max 0 (max (∑ x ∈ X, resP μ i j x - ∑ y ∈ overlap (G := G) i j, resN μ i j y)
             (∑ y ∈ Y, resN μ i j y - ∑ x ∈ overlap (G := G) i j, resP μ i j x)) := by
   refine ⟨isGreatest_maxFlow (resP_nonneg μ i j) (resN_nonneg μ i j), fun η hη => ?_⟩
-  refine tq_upper hd hi hj hη (fun x hx y hy hyS => ?_) (fun y hy x hx hxS => ?_)
+  refine tq_upper hd hi hj (fun _ hρ => (adjMass_le_maxFlow (G := G) hρ).trans hη)
+    (fun x hx y hy hyS => ?_) (fun y hy x hx hxS => ?_)
   · obtain ⟨hxU, hnc, hnb⟩ := hX x hx
     exact far_of_closedX h3 hxU hnc
       (fun w hw => (hnb w hw).imp_right fun h => h.elim And.right And.right)
@@ -233,7 +328,7 @@ theorem tq_range_paper (hi : OneStepAt G μ i) (hj : OneStepAt G μ j) :
         (∀ x y, 0 < π x y → chargedDist G i j ∅ x y ≤ c x y) →
         1 - 3 * resMass μ i j + ∑ x, ∑ y, (3 - c x y) * π x y ≤ kappaF G i j μ ∅) ∧
     (∀ (η : ℝ) (X Y : Finset V),
-        (∀ ρ, IsCoupling (resP μ i j) (resN μ i j) ρ → adjMass G ρ ≤ η) →
+        maxFlow G (resP μ i j) (resN μ i j) ≤ η →
         IsFarX G i j X → IsFarY G i j Y →
         kappaMax G i j μ ≤ 1 - 2 * resMass μ i j + η
           - max 0 (max (∑ x ∈ X, resP μ i j x - ∑ y ∈ overlap (G := G) i j, resN μ i j y)
@@ -244,12 +339,13 @@ theorem tq_range_paper (hi : OneStepAt G μ i) (hj : OneStepAt G μ j) :
     linarith
   · unfold kappaMax
     exact Finset.sup'_le _ _ fun F hF =>
-      kappaF_le_tq_upper hi hj (mem_admissibleSets.mp hF) hη hX hY
+      kappaF_le_tq_upper hi hj (mem_admissibleSets.mp hF)
+        (fun _ hρ => (adjMass_le_maxFlow (G := G) hρ).trans hη) hX hY
 
-/-- **Theorem 5.3 (iv).** A coupling of the residuals moves at most `η'` along edges: any
+/-- A coupling of the residuals moves at most `η'` along edges: any
 `B ≥ F + min{O_i, |r(i)| − F} + min{O_j, |r(j)| − F}` on `[0, F_ij]`, plus, over blocks that no
 supply–demand edge outside `{i, j}` crosses, the smaller of the capped supply and demand. -/
-theorem tq_upper_blocks_paper {β : Type*} [DecidableEq β] (hij : i ≠ j)
+theorem adjMass_le_blocks {β : Type*} [DecidableEq β] (hij : i ≠ j)
     (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (b : V → β)
     (hb : ∀ x y, 0 < resP μ i j x → 0 < resN μ i j y → G.Adj x y →
       x ∉ ({i, j} : Finset V) → y ∉ ({i, j} : Finset V) → b x = b y)
@@ -360,5 +456,20 @@ theorem tq_upper_blocks_paper {β : Type*} [DecidableEq β] (hij : i ≠ j)
           min (∑ x ∈ Finset.univ.filter (fun x => b x = l ∧ x ∉ ({i, j} : Finset V)), capS G μ i j x)
             (∑ y ∈ Finset.univ.filter (fun y => b y = l ∧ y ∉ ({i, j} : Finset V)), capD G μ i j y) :=
         add_le_add hat (outside_le_blocks hρ ({i, j} : Finset V) b hb)
+
+/-- **Theorem 5.3 (iv).** The bound `η'` is at least the maximum flow `η`, so it can be taken for
+`η'` in (ii) and (iii). -/
+theorem tq_upper_blocks_paper {β : Type*} [DecidableEq β] (hi : OneStepAt G μ i)
+    (hj : OneStepAt G μ j) (hij : i ≠ j) (b : V → β)
+    (hb : ∀ x y, 0 < resP μ i j x → 0 < resN μ i j y → G.Adj x y →
+      x ∉ ({i, j} : Finset V) → y ∉ ({i, j} : Finset V) → b x = b y)
+    {B : ℝ} (hB : ∀ F, 0 ≤ F → F ≤ flowIJ μ i j →
+      F + min (oppNbr G μ i j i) (resAbs μ i j i - F)
+        + min (oppNbr G μ i j j) (resAbs μ i j j - F) ≤ B) :
+    maxFlow G (resP μ i j) (resN μ i j) ≤ B + ∑ l ∈ Finset.univ.image b,
+        min (∑ x ∈ Finset.univ.filter (fun x => b x = l ∧ x ∉ ({i, j} : Finset V)), capS G μ i j x)
+          (∑ y ∈ Finset.univ.filter (fun y => b y = l ∧ y ∉ ({i, j} : Finset V)), capD G μ i j y) :=
+  maxFlow_le (resP_nonneg μ i j) (resN_nonneg μ i j) (resP_sum_eq_resN_sum hi hj)
+    fun _ hρ => adjMass_le_blocks hij hρ b hb hB
 
 end OllivierBF
