@@ -1,17 +1,4 @@
-/-
-  The triangle–quadrangle bound (Theorem 5.3 of the paper), for every one-step measure.
-
-  * (i) `tq_lower`: every partial plan of the residuals, with charged distances at least the true
-    ones on its support, gives `κ ≥ 1 − 3τ + Σ (3 − c) π`.
-  * (ii) `tq_upper`: if `η` bounds the mass that couplings of the residuals move along edges, and
-    `X₃`, `Y₃` are at distance `3` from the opposite residual outside `S`, then
-    `κ ≤ 1 − 2τ + η − D₃`.
-  * (iv) the bound `η'`: the flow along `(i, j)` and the capacities left at `i` and `j`, and, outside
-    `{i, j}`, the smaller of the capped supply and the capped demand of every block
-    (`adjMass_le_blocks_ij`). `far_of_closedX` and `far_of_closedY` deduce from the
-    neighbourhoods that `X₃` and `Y₃` are at distance `3`, using `ThreeApart`, which the
-    shortest-path distance satisfies (`threeApart_dist`).
--/
+/- The counting behind Theorem 5.3. -/
 module
 
 public import OllivierBF.OneStep
@@ -26,41 +13,38 @@ namespace OllivierBF
 
 variable {V : Type*} [Fintype V] [DecidableEq V]
 
-/-- Mass that a plan moves along edges. -/
+/-- The mass that a plan moves along edges. -/
 noncomputable def adjMass (G : SimpleGraph V) [DecidableRel G.Adj] (π : V → V → ℝ) : ℝ :=
   ∑ x, ∑ y, if G.Adj x y then π x y else 0
 
-/-- Distinct vertices with no edge and no common neighbour are at distance at least `3`. -/
+/-- Distinct non-adjacent vertices without a common neighbour are at distance at least `3`. -/
 def ThreeApart (G : SimpleGraph V) (d : V → V → ℝ) : Prop :=
   ∀ x y, x ≠ y → ¬ G.Adj x y → (∀ w, ¬ (G.Adj x w ∧ G.Adj w y)) → 3 ≤ d x y
 
-/-- Capped supply: at most the residual supply and the residual demand of the neighbours. -/
+/-- Capped supply: the smaller of `r₊(x)` and the demand on the neighbours of `x`. -/
 noncomputable def capS (G : SimpleGraph V) [DecidableRel G.Adj] (μ : V → V → ℝ) (i j x : V) : ℝ :=
   min (resP μ i j x) (∑ y, if G.Adj x y then resN μ i j y else 0)
 
-/-- Capped demand: at most the residual demand and the residual supply of the neighbours. -/
+/-- Capped demand: the smaller of `r₋(y)` and the supply on the neighbours of `y`. -/
 noncomputable def capD (G : SimpleGraph V) [DecidableRel G.Adj] (μ : V → V → ℝ) (i j y : V) : ℝ :=
   min (resN μ i j y) (∑ x, if G.Adj x y then resP μ i j x else 0)
 
 /-- `|r(u)| = r₊(u) + r₋(u)`. -/
 noncomputable def resAbs (μ : V → V → ℝ) (i j u : V) : ℝ := resP μ i j u + resN μ i j u
 
-/-- `O_u` of Theorem 5.3 (iv): the residual of the sign opposite to `r(u)` on the neighbours of `u`
-other than `i` and `j`. -/
+/-- `O_u`: the residual of the sign opposite to `r(u)` on `N(u) \ {i, j}`. -/
 noncomputable def oppNbr (G : SimpleGraph V) [DecidableRel G.Adj] (μ : V → V → ℝ) (i j u : V) : ℝ :=
   (if 0 < resP μ i j u then
       ∑ y, (if y ∉ ({i, j} : Finset V) ∧ G.Adj u y then resN μ i j y else 0) else 0)
     + (if 0 < resN μ i j u then
       ∑ x, (if x ∉ ({i, j} : Finset V) ∧ G.Adj x u then resP μ i j x else 0) else 0)
 
-/-- `F_ij` of Theorem 5.3 (iv): the largest flow along the edge `(i, j)`. -/
+/-- `F_ij = min{r₊(i), r₋(j)} + min{r₊(j), r₋(i)}`. -/
 noncomputable def flowIJ (μ : V → V → ℝ) (i j : V) : ℝ :=
   min (resP μ i j i) (resN μ i j j) + min (resP μ i j j) (resN μ i j i)
 
 variable {G : SimpleGraph V} [DecidableRel G.Adj] {d : V → V → ℝ}
 variable {μ : V → V → ℝ} {i j : V} {ρ : V → V → ℝ}
-
-/-! ### The shortest-path distance separates vertices without short paths -/
 
 lemma threeApart_dist (hG : G.Connected) : ThreeApart G (fun x y => (G.dist x y : ℝ)) := by
   intro x y hxy hadj hcn
@@ -78,8 +62,6 @@ lemma threeApart_dist (hG : G.Connected) : ThreeApart G (fun x y => (G.dist x y 
   show (3 : ℝ) ≤ (G.dist x y : ℝ)
   exact_mod_cast h3
 
-/-! ### Couplings of the residuals -/
-
 lemma resid_pos_of_plan_pos (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) {x y : V}
     (h : 0 < ρ x y) : 0 < resP μ i j x ∧ 0 < resN μ i j y := by
   constructor
@@ -92,7 +74,6 @@ lemma resid_pos_of_plan_pos (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) {x
     rw [hρ.2.2 y] at hle
     linarith
 
-/-- A coupling of the residuals keeps no mass in place. -/
 lemma resid_plan_diag (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (x : V) : ρ x x = 0 := by
   have h1 := hρ.diag_le x
   have h0 := hρ.1 x x
@@ -123,7 +104,6 @@ lemma sum_col_ind {α β : V → ℝ} {π : V → V → ℝ} (hπ : IsCoupling �
     · simp [hy]
   rw [Finset.sum_congr rfl fun y _ => h y, Finset.sum_ite_mem, Finset.univ_inter]
 
-/-- The mass from `A` that does not go to `B` is at least `α(A) − β(B)`. -/
 lemma far_ge {α β : V → ℝ} {π : V → V → ℝ} (hπ : IsCoupling α β π) (A B : Finset V) :
     ∑ x ∈ A, α x - ∑ y ∈ B, β y ≤ ∑ x, ∑ y, (if x ∈ A ∧ y ∉ B then π x y else 0) := by
   rw [← sum_row_ind hπ A, ← sum_col_ind hπ B, ← Finset.sum_sub_distrib]
@@ -133,7 +113,6 @@ lemma far_ge {α β : V → ℝ} {π : V → V → ℝ} (hπ : IsCoupling α β 
   have h0 := hπ.1 x y
   by_cases hx : x ∈ A <;> by_cases hy : y ∈ B <;> simp [hx, hy, h0]
 
-/-- The mass into `A` that does not come from `B` is at least `β(A) − α(B)`. -/
 lemma far_ge' {α β : V → ℝ} {π : V → V → ℝ} (hπ : IsCoupling α β π) (A B : Finset V) :
     ∑ y ∈ A, β y - ∑ x ∈ B, α x ≤ ∑ x, ∑ y, (if y ∈ A ∧ x ∉ B then π x y else 0) := by
   rw [← sum_col_ind hπ A, ← sum_row_ind hπ B, ← Finset.sum_sub_distrib]
@@ -143,45 +122,12 @@ lemma far_ge' {α β : V → ℝ} {π : V → V → ℝ} (hπ : IsCoupling α β
   have h0 := hπ.1 x y
   by_cases hx : x ∈ B <;> by_cases hy : y ∈ A <;> simp [hx, hy, h0]
 
-/-! ### Theorem 5.3 (i): the lower end -/
-
-/-- **Theorem 5.3 (i).** Every partial plan `π` of the residuals, with charged distances `c` at least
-the true ones on its support, gives `κ_μ ≥ 1 − 3τ + Σ (3 − c) π`. -/
-theorem tq_lower (hd : GraphMetric G d) (hij : G.Adj i j)
-    (hi : OneStepAt G μ i) (hj : OneStepAt G μ j) {π : V → V → ℝ}
-    (hπ : IsSubPlan (resP μ i j) (resN μ i j) π) {c : V → V → ℝ}
-    (hc : ∀ x y, 0 < π x y → d x y ≤ c x y) :
-    1 - 3 * resMass μ i j + ∑ x, ∑ y, (3 - c x y) * π x y ≤ cORm d μ i j := by
-  obtain ⟨ρ, hρ, hsav⟩ := exists_extension (d := d) hπ (resP_sum_eq_resN_sum hi hj)
-    (fun x y hx hy => resid_dist_le_three hd hij hi hj hx hy)
-  have hcs : ∑ x, ∑ y, (3 - c x y) * π x y ≤ savings d π := by
-    unfold savings
-    refine Finset.sum_le_sum fun x _ => Finset.sum_le_sum fun y _ => ?_
-    rcases (hπ.1 x y).eq_or_lt with h0 | h0
-    · rw [← h0]; simp
-    · exact mul_le_mul_of_nonneg_right (by linarith [hc x y h0]) h0.le
-  have hm : ∀ x, 0 ≤ min (μ i x) (μ j x) := fun x => le_min (hi.nonneg x) (hj.nonneg x)
-  have hfull : IsCoupling (μ i) (μ j)
-      (fun x y => (if x = y then min (μ i x) (μ j x) else 0) + ρ x y) :=
-    ((isCoupling_diag hm).add hρ).of_marg_eq (fun x => by simp [resP]) (fun y => by simp [resN])
-  have hW : W1 d (μ i) (μ j) ≤ cost d ρ := by
-    calc W1 d (μ i) (μ j)
-        ≤ cost d (fun x y => (if x = y then min (μ i x) (μ j x) else 0) + ρ x y) :=
-          W1_le_cost hd.nonneg hfull
-      _ = cost d ρ := by rw [cost_add, cost_diag hd.self, zero_add]
-  have hid := savings_identity (d := d) hρ
-  unfold cORm
-  linarith
-
-/-! ### Theorem 5.3 (ii): the upper end -/
-
-/-- Pointwise bound behind the upper end: each unit costs at least `2`, `1` along an edge, and `3`
-from a vertex of `X` to a demand vertex outside `S`. -/
-lemma pair_bound_X (hd : GraphMetric G d) (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ)
+lemma pair_bound_X {c : V → V → ℝ} (hc1 : ∀ {x y}, G.Adj x y → c x y = 1)
+    (hc2 : ∀ {x y}, x ≠ y → ¬ G.Adj x y → 2 ≤ c x y) (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ)
     {X : Finset V}
-    (hX : ∀ x ∈ X, ∀ y, 0 < resN μ i j y → y ∉ overlap (G := G) i j → 3 ≤ d x y) (x y : V) :
+    (hX : ∀ x ∈ X, ∀ y, 0 < resN μ i j y → y ∉ overlap (G := G) i j → 3 ≤ c x y) (x y : V) :
     (2 - (if G.Adj x y then 1 else 0) + (if x ∈ X ∧ y ∉ overlap (G := G) i j then 1 else 0))
-        * ρ x y ≤ d x y * ρ x y := by
+        * ρ x y ≤ c x y * ρ x y := by
   rcases (hρ.1 x y).eq_or_lt with h0 | h0
   · rw [← h0]; simp
   obtain ⟨-, hyN⟩ := resid_pos_of_plan_pos hρ h0
@@ -194,11 +140,11 @@ lemma pair_bound_X (hd : GraphMetric G d) (hρ : IsCoupling (resP μ i j) (resN 
   · have hnf : ¬ (x ∈ X ∧ y ∉ overlap (G := G) i j) := by
       rintro ⟨hx, hy⟩
       have h3 := hX x hx y hyN hy
-      rw [hd.adj hadj] at h3
+      rw [hc1 hadj] at h3
       linarith
-    rw [ite_eq_left hadj, ite_eq_right hnf, hd.adj hadj]
+    rw [ite_eq_left hadj, ite_eq_right hnf, hc1 hadj]
     norm_num
-  · have hd2 := hd.two_le hxy hadj
+  · have hd2 := hc2 hxy hadj
     rw [ite_eq_right hadj]
     by_cases hf : x ∈ X ∧ y ∉ overlap (G := G) i j
     · rw [ite_eq_left hf]
@@ -207,12 +153,12 @@ lemma pair_bound_X (hd : GraphMetric G d) (hρ : IsCoupling (resP μ i j) (resN 
     · rw [ite_eq_right hf]
       linarith
 
-/-- The same, with the far set on the demand side. -/
-lemma pair_bound_Y (hd : GraphMetric G d) (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ)
+lemma pair_bound_Y {c : V → V → ℝ} (hc1 : ∀ {x y}, G.Adj x y → c x y = 1)
+    (hc2 : ∀ {x y}, x ≠ y → ¬ G.Adj x y → 2 ≤ c x y) (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ)
     {Y : Finset V}
-    (hY : ∀ y ∈ Y, ∀ x, 0 < resP μ i j x → x ∉ overlap (G := G) i j → 3 ≤ d x y) (x y : V) :
+    (hY : ∀ y ∈ Y, ∀ x, 0 < resP μ i j x → x ∉ overlap (G := G) i j → 3 ≤ c x y) (x y : V) :
     (2 - (if G.Adj x y then 1 else 0) + (if y ∈ Y ∧ x ∉ overlap (G := G) i j then 1 else 0))
-        * ρ x y ≤ d x y * ρ x y := by
+        * ρ x y ≤ c x y * ρ x y := by
   rcases (hρ.1 x y).eq_or_lt with h0 | h0
   · rw [← h0]; simp
   obtain ⟨hxP, -⟩ := resid_pos_of_plan_pos hρ h0
@@ -225,11 +171,11 @@ lemma pair_bound_Y (hd : GraphMetric G d) (hρ : IsCoupling (resP μ i j) (resN 
   · have hnf : ¬ (y ∈ Y ∧ x ∉ overlap (G := G) i j) := by
       rintro ⟨hy, hx⟩
       have h3 := hY y hy x hxP hx
-      rw [hd.adj hadj] at h3
+      rw [hc1 hadj] at h3
       linarith
-    rw [ite_eq_left hadj, ite_eq_right hnf, hd.adj hadj]
+    rw [ite_eq_left hadj, ite_eq_right hnf, hc1 hadj]
     norm_num
-  · have hd2 := hd.two_le hxy hadj
+  · have hd2 := hc2 hxy hadj
     rw [ite_eq_right hadj]
     by_cases hf : y ∈ Y ∧ x ∉ overlap (G := G) i j
     · rw [ite_eq_left hf]
@@ -238,7 +184,6 @@ lemma pair_bound_Y (hd : GraphMetric G d) (hρ : IsCoupling (resP μ i j) (resN 
     · rw [ite_eq_right hf]
       linarith
 
-/-- Summing the pointwise weights: `2·mass − (mass along edges) + (far mass)`. -/
 lemma sum_weight_X (π : V → V → ℝ) (X S : Finset V) :
     ∑ x, ∑ y, (2 - (if G.Adj x y then 1 else 0) + (if x ∈ X ∧ y ∉ S then 1 else 0)) * π x y
       = 2 * mass π - adjMass G π + ∑ x, ∑ y, (if x ∈ X ∧ y ∉ S then π x y else 0) := by
@@ -259,9 +204,46 @@ lemma sum_weight_Y (π : V → V → ℝ) (Y S : Finset V) :
   refine Finset.sum_congr rfl fun y _ => ?_
   split_ifs <;> ring
 
-/-- **Theorem 5.3 (ii).** If every coupling of the residuals moves at most `η` along edges, and the
-sets `X`, `Y` are at distance `3` from the opposite residual outside `S`, then
-`κ_μ ≤ 1 − 2τ + η − D₃` with `D₃ = max{0, r₊(X) − r₋(S), r₋(Y) − r₊(S)}`. -/
+lemma cost_ge_of_far {c : V → V → ℝ} (hc1 : ∀ {x y}, G.Adj x y → c x y = 1)
+    (hc2 : ∀ {x y}, x ≠ y → ¬ G.Adj x y → 2 ≤ c x y) {X Y : Finset V}
+    (hX : ∀ x ∈ X, ∀ y, 0 < resN μ i j y → y ∉ overlap (G := G) i j → 3 ≤ c x y)
+    (hY : ∀ y ∈ Y, ∀ x, 0 < resP μ i j x → x ∉ overlap (G := G) i j → 3 ≤ c x y)
+    (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) {η : ℝ} (hA : adjMass G ρ ≤ η) :
+    2 * resMass μ i j - η
+        + max 0 (max (∑ x ∈ X, resP μ i j x - ∑ y ∈ overlap (G := G) i j, resN μ i j y)
+          (∑ y ∈ Y, resN μ i j y - ∑ x ∈ overlap (G := G) i j, resP μ i j x))
+      ≤ cost c ρ := by
+  have hm : mass ρ = resMass μ i j := hρ.mass_eq
+  have hXc : 2 * mass ρ - adjMass G ρ
+      + ∑ x, ∑ y, (if x ∈ X ∧ y ∉ overlap (G := G) i j then ρ x y else 0) ≤ cost c ρ := by
+    rw [← sum_weight_X (G := G) ρ X (overlap (G := G) i j)]
+    unfold cost
+    exact Finset.sum_le_sum fun x _ => Finset.sum_le_sum fun y _ =>
+      pair_bound_X hc1 hc2 hρ hX x y
+  have hYc : 2 * mass ρ - adjMass G ρ
+      + ∑ x, ∑ y, (if y ∈ Y ∧ x ∉ overlap (G := G) i j then ρ x y else 0) ≤ cost c ρ := by
+    rw [← sum_weight_Y (G := G) ρ Y (overlap (G := G) i j)]
+    unfold cost
+    exact Finset.sum_le_sum fun x _ => Finset.sum_le_sum fun y _ =>
+      pair_bound_Y hc1 hc2 hρ hY x y
+  have hfx := far_ge hρ X (overlap (G := G) i j)
+  have hfy := far_ge' hρ Y (overlap (G := G) i j)
+  have hfx0 : 0 ≤ ∑ x, ∑ y, (if x ∈ X ∧ y ∉ overlap (G := G) i j then ρ x y else 0) :=
+    Finset.sum_nonneg fun x _ => Finset.sum_nonneg fun y _ => by
+      split_ifs
+      · exact hρ.1 x y
+      · exact le_rfl
+  have hfy0 : 0 ≤ ∑ x, ∑ y, (if y ∈ Y ∧ x ∉ overlap (G := G) i j then ρ x y else 0) :=
+    Finset.sum_nonneg fun x _ => Finset.sum_nonneg fun y _ => by
+      split_ifs
+      · exact hρ.1 x y
+      · exact le_rfl
+  have hmax : max 0 (max (∑ x ∈ X, resP μ i j x - ∑ y ∈ overlap (G := G) i j, resN μ i j y)
+      (∑ y ∈ Y, resN μ i j y - ∑ x ∈ overlap (G := G) i j, resP μ i j x))
+      ≤ cost c ρ - (2 * resMass μ i j - η) :=
+    max_le (by linarith) (max_le (by linarith) (by linarith))
+  linarith
+
 theorem tq_upper (hd : GraphMetric G d) (hi : OneStepAt G μ i) (hj : OneStepAt G μ j)
     {η : ℝ} (hη : ∀ ρ, IsCoupling (resP μ i j) (resN μ i j) ρ → adjMass G ρ ≤ η)
     {X Y : Finset V}
@@ -270,46 +252,10 @@ theorem tq_upper (hd : GraphMetric G d) (hi : OneStepAt G μ i) (hj : OneStepAt 
     cORm d μ i j ≤ 1 - 2 * resMass μ i j + η
       - max 0 (max (∑ x ∈ X, resP μ i j x - ∑ y ∈ overlap (G := G) i j, resN μ i j y)
         (∑ y ∈ Y, resN μ i j y - ∑ x ∈ overlap (G := G) i j, resP μ i j x)) := by
-  have key : ∀ ρ, IsCoupling (resP μ i j) (resN μ i j) ρ →
-      2 * resMass μ i j - η
-        + max 0 (max (∑ x ∈ X, resP μ i j x - ∑ y ∈ overlap (G := G) i j, resN μ i j y)
-          (∑ y ∈ Y, resN μ i j y - ∑ x ∈ overlap (G := G) i j, resP μ i j x))
-        ≤ cost d ρ := by
-    intro ρ hρ
-    have hA := hη ρ hρ
-    have hm : mass ρ = resMass μ i j := hρ.mass_eq
-    have hXc : 2 * mass ρ - adjMass G ρ
-        + ∑ x, ∑ y, (if x ∈ X ∧ y ∉ overlap (G := G) i j then ρ x y else 0) ≤ cost d ρ := by
-      rw [← sum_weight_X (G := G) ρ X (overlap (G := G) i j)]
-      unfold cost
-      exact Finset.sum_le_sum fun x _ => Finset.sum_le_sum fun y _ => pair_bound_X hd hρ hX x y
-    have hYc : 2 * mass ρ - adjMass G ρ
-        + ∑ x, ∑ y, (if y ∈ Y ∧ x ∉ overlap (G := G) i j then ρ x y else 0) ≤ cost d ρ := by
-      rw [← sum_weight_Y (G := G) ρ Y (overlap (G := G) i j)]
-      unfold cost
-      exact Finset.sum_le_sum fun x _ => Finset.sum_le_sum fun y _ => pair_bound_Y hd hρ hY x y
-    have hfx := far_ge hρ X (overlap (G := G) i j)
-    have hfy := far_ge' hρ Y (overlap (G := G) i j)
-    have hfx0 : 0 ≤ ∑ x, ∑ y, (if x ∈ X ∧ y ∉ overlap (G := G) i j then ρ x y else 0) :=
-      Finset.sum_nonneg fun x _ => Finset.sum_nonneg fun y _ => by
-        split_ifs
-        · exact hρ.1 x y
-        · exact le_rfl
-    have hfy0 : 0 ≤ ∑ x, ∑ y, (if y ∈ Y ∧ x ∉ overlap (G := G) i j then ρ x y else 0) :=
-      Finset.sum_nonneg fun x _ => Finset.sum_nonneg fun y _ => by
-        split_ifs
-        · exact hρ.1 x y
-        · exact le_rfl
-    have hmax : max 0 (max (∑ x ∈ X, resP μ i j x - ∑ y ∈ overlap (G := G) i j, resN μ i j y)
-        (∑ y ∈ Y, resN μ i j y - ∑ x ∈ overlap (G := G) i j, resP μ i j x))
-        ≤ cost d ρ - (2 * resMass μ i j - η) :=
-      max_le (by linarith) (max_le (by linarith) (by linarith))
-    linarith
-  have hW := le_W1 (exists_resid_coupling_of hi hj) key
+  have hW := le_W1 (exists_resid_coupling_of hi hj) fun ρ hρ =>
+    cost_ge_of_far (fun h => hd.adj h) (fun h h' => hd.two_le h h') hX hY hρ (hη ρ hρ)
   rw [cORm_eq_resid hd hi hj]
   linarith
-
-/-! ### Bounds on the mass moved along edges -/
 
 lemma row_adj_le_capS (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (x : V) :
     ∑ y, (if G.Adj x y then ρ x y else 0) ≤ capS G μ i j x := by
@@ -347,9 +293,6 @@ lemma col_adj_le_capD (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (y : V) 
         _ = resP μ i j x := hρ.2.1 x
     · exact le_rfl
 
-/-- **The edges outside a set `I` of hubs, block by block.** If every edge between supply and demand
-outside `I` joins vertices of the same block, those edges carry at most, block by block, the smaller of
-the capped supply and the capped demand. -/
 lemma outside_le_blocks {β : Type*} [DecidableEq β]
     (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (I : Finset V) (b : V → β)
     (hb : ∀ x y, 0 < resP μ i j x → 0 < resN μ i j y → G.Adj x y → x ∉ I → y ∉ I → b x = b y) :
@@ -357,7 +300,6 @@ lemma outside_le_blocks {β : Type*} [DecidableEq β]
       ≤ ∑ l ∈ Finset.univ.image b,
           min (∑ x ∈ Finset.univ.filter (fun x => b x = l ∧ x ∉ I), capS G μ i j x)
             (∑ y ∈ Finset.univ.filter (fun y => b y = l ∧ y ∉ I), capD G μ i j y) := by
-  -- the part outside `I`, block by block
   have hblock : ∀ x y, (if G.Adj x y ∧ x ∉ I ∧ y ∉ I then ρ x y else 0)
       = ∑ l ∈ Finset.univ.image b,
           if b x = l then (if G.Adj x y ∧ x ∉ I ∧ y ∉ I then ρ x y else 0) else 0 := by
@@ -381,7 +323,7 @@ lemma outside_le_blocks {β : Type*} [DecidableEq β]
           (∑ y ∈ Finset.univ.filter (fun y => b y = l ∧ y ∉ I), capD G μ i j y) := by
     intro l
     apply le_min
-    · -- through the supply side
+    ·
       rw [Finset.sum_filter]
       refine Finset.sum_le_sum fun x _ => ?_
       by_cases hx : b x = l ∧ x ∉ I
@@ -402,7 +344,7 @@ lemma outside_le_blocks {β : Type*} [DecidableEq β]
             exact hx ⟨hbx, hxI⟩
           rw [ite_eq_right (fun hc => hc.2.1 hxI)]
         · rw [ite_eq_right hbx]
-    · -- through the demand side: edges outside `I` with mass stay in the block
+    ·
       rw [Finset.sum_comm, Finset.sum_filter]
       refine Finset.sum_le_sum fun y _ => ?_
       by_cases hy : b y = l ∧ y ∉ I
@@ -424,7 +366,6 @@ lemma outside_le_blocks {β : Type*} [DecidableEq β]
         · rw [ite_eq_left hbx]
           by_cases hc : G.Adj x y ∧ x ∉ I ∧ y ∉ I
           · rw [ite_eq_left hc]
-            -- an edge with mass outside `I` joins vertices of one block
             rcases (hρ.1 x y).eq_or_lt with h | h
             · exact h.symm
             · obtain ⟨hx, hy'⟩ := resid_pos_of_plan_pos hρ h
@@ -434,8 +375,6 @@ lemma outside_le_blocks {β : Type*} [DecidableEq β]
         · rw [ite_eq_right hbx]
   rw [hout]
   exact Finset.sum_le_sum fun l _ => hl l
-
-/-! ### The sharper bound at `{i, j}` (Theorem 5.3 (iv)) -/
 
 lemma plan_le_resP (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (x y : V) :
     ρ x y ≤ resP μ i j x := by
@@ -451,7 +390,6 @@ lemma plan_le_resN (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (x y : V) :
   rw [hρ.2.2 y] at hle
   exact hle
 
-/-- The row of `u`: the edge to `w ∈ I` and the edges to vertices outside `I` carry at most `r₊(u)`. -/
 lemma row_at_le (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (I : Finset V) {u w : V}
     (hw : w ∈ I) :
     (if G.Adj u w then ρ u w else 0) + ∑ y, (if y ∉ I ∧ G.Adj u y then ρ u y else 0)
@@ -473,8 +411,6 @@ lemma row_at_le (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (I : Finset V)
   · rw [ite_eq_right (fun h : y = w ∧ G.Adj u y => hy h.1)]
     split_ifs <;> linarith
 
-/-- The column of `u`: the edge from `w ∈ I` and the edges from vertices outside `I` carry at most
-`r₋(u)`. -/
 lemma col_at_le (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (I : Finset V) {u w : V}
     (hw : w ∈ I) :
     (if G.Adj w u then ρ w u else 0) + ∑ x, (if x ∉ I ∧ G.Adj x u then ρ x u else 0)
@@ -496,8 +432,6 @@ lemma col_at_le (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (I : Finset V)
   · rw [ite_eq_right (fun h : x = w ∧ G.Adj x u => hx h.1)]
     split_ifs <;> linarith
 
-/-- A supplier sends along its other edges at most the demand of its other neighbours; a vertex
-without supply sends nothing. -/
 lemma rowpart_le_opp (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (I : Finset V) (u : V) :
     ∑ y, (if y ∉ I ∧ G.Adj u y then ρ u y else 0)
       ≤ if 0 < resP μ i j u then ∑ y, (if y ∉ I ∧ G.Adj u y then resN μ i j y else 0) else 0 := by
@@ -514,8 +448,6 @@ lemma rowpart_le_opp (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (I : Fins
     rw [h0]
     simp
 
-/-- A vertex with demand receives along its other edges at most the supply of its other neighbours;
-a vertex without demand receives nothing. -/
 lemma colpart_le_opp (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (I : Finset V) (u : V) :
     ∑ x, (if x ∉ I ∧ G.Adj x u then ρ x u else 0)
       ≤ if 0 < resN μ i j u then ∑ x, (if x ∉ I ∧ G.Adj x u then resP μ i j x else 0) else 0 := by
@@ -570,7 +502,6 @@ lemma sum_sum_snd_eq (g : V → V → ℝ) (a : V) (A : Finset V) :
   · intro h
     exact absurd (Finset.mem_univ a) h
 
-/-- An edge at `{i, j}` is `(i, j)`, `(j, i)`, or an edge at only one of `i`, `j`. -/
 lemma ite_at_ij (hij : i ≠ j) (g : V → V → ℝ) (x y : V) :
     (if G.Adj x y ∧ (x ∈ ({i, j} : Finset V) ∨ y ∈ ({i, j} : Finset V)) then g x y else 0)
       = (if x = i ∧ (y = j ∧ G.Adj x y) then g x y else 0)
@@ -583,129 +514,6 @@ lemma ite_at_ij (hij : i ≠ j) (g : V → V → ℝ) (x y : V) :
   by_cases hxi : x = i <;> by_cases hxj : x = j <;> by_cases hyi : y = i <;> by_cases hyj : y = j <;>
     by_cases hadj : G.Adj x y <;> simp_all [Finset.mem_insert, Finset.mem_singleton]
 
-/-- **The componentwise bound of Theorem 5.3 (iv).** A flow moves some `F ≤ F_ij` along `(i, j)`, at
-most `min{O_u, |r(u)| − F}` along the other edges at `u ∈ {i, j}`, and, outside `{i, j}`, at most the
-smaller of the capped supply and the capped demand of every block. So for every `B` that bounds
-`F + min{O_i, |r(i)| − F} + min{O_j, |r(j)| − F}` on `[0, F_ij]` (for instance its maximum), the mass
-along edges is at most `B` plus the block terms. -/
-theorem adjMass_le_blocks_ij {β : Type*} [DecidableEq β] (hij : i ≠ j)
-    (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (b : V → β)
-    (hb : ∀ x y, 0 < resP μ i j x → 0 < resN μ i j y → G.Adj x y →
-      x ∉ ({i, j} : Finset V) → y ∉ ({i, j} : Finset V) → b x = b y)
-    {B : ℝ} (hB : ∀ F, 0 ≤ F → F ≤ flowIJ μ i j →
-      F + min (oppNbr G μ i j i) (resAbs μ i j i - F)
-        + min (oppNbr G μ i j j) (resAbs μ i j j - F) ≤ B) :
-    adjMass G ρ ≤ B + ∑ l ∈ Finset.univ.image b,
-        min (∑ x ∈ Finset.univ.filter (fun x => b x = l ∧ x ∉ ({i, j} : Finset V)), capS G μ i j x)
-          (∑ y ∈ Finset.univ.filter (fun y => b y = l ∧ y ∉ ({i, j} : Finset V)), capD G μ i j y) := by
-  have hiI : i ∈ ({i, j} : Finset V) := by simp
-  have hjI : j ∈ ({i, j} : Finset V) := by simp
-  -- the edges at {i, j} and the others
-  have hsplit : adjMass G ρ ≤
-      ∑ x, ∑ y, (if G.Adj x y ∧ (x ∈ ({i, j} : Finset V) ∨ y ∈ ({i, j} : Finset V))
-          then ρ x y else 0)
-      + ∑ x, ∑ y, (if G.Adj x y ∧ x ∉ ({i, j} : Finset V) ∧ y ∉ ({i, j} : Finset V)
-          then ρ x y else 0) := by
-    unfold adjMass
-    rw [← Finset.sum_add_distrib]
-    refine Finset.sum_le_sum fun x _ => ?_
-    rw [← Finset.sum_add_distrib]
-    refine Finset.sum_le_sum fun y _ => ?_
-    have h0 := hρ.1 x y
-    by_cases hadj : G.Adj x y
-    · by_cases hc : x ∈ ({i, j} : Finset V) ∨ y ∈ ({i, j} : Finset V)
-      · have hcond : G.Adj x y ∧ (x ∈ ({i, j} : Finset V) ∨ y ∈ ({i, j} : Finset V)) := ⟨hadj, hc⟩
-        have hn : ¬ (G.Adj x y ∧ x ∉ ({i, j} : Finset V) ∧ y ∉ ({i, j} : Finset V)) := by
-          rintro ⟨-, hx, hy⟩
-          rcases hc with hc | hc
-          · exact hx hc
-          · exact hy hc
-        rw [ite_eq_left hadj, ite_eq_left hcond, ite_eq_right hn]
-        linarith
-      · have hcond : G.Adj x y ∧ x ∉ ({i, j} : Finset V) ∧ y ∉ ({i, j} : Finset V) :=
-          ⟨hadj, fun h => hc (Or.inl h), fun h => hc (Or.inr h)⟩
-        have hn : ¬ (G.Adj x y ∧ (x ∈ ({i, j} : Finset V) ∨ y ∈ ({i, j} : Finset V))) :=
-          fun h => hc h.2
-        rw [ite_eq_left hadj, ite_eq_right hn, ite_eq_left hcond]
-        linarith
-    · have hn1 : ¬ (G.Adj x y ∧ (x ∈ ({i, j} : Finset V) ∨ y ∈ ({i, j} : Finset V))) :=
-        fun h => hadj h.1
-      have hn2 : ¬ (G.Adj x y ∧ x ∉ ({i, j} : Finset V) ∧ y ∉ ({i, j} : Finset V)) :=
-        fun h => hadj h.1
-      rw [ite_eq_right hadj, ite_eq_right hn1, ite_eq_right hn2]
-      linarith
-  -- the edges at {i, j}: F along (i, j), A_i and A_j along the other edges at i and j
-  have hid : ∑ x, ∑ y, (if G.Adj x y ∧ (x ∈ ({i, j} : Finset V) ∨ y ∈ ({i, j} : Finset V))
-        then ρ x y else 0)
-      = (if G.Adj i j then ρ i j else 0) + (if G.Adj j i then ρ j i else 0)
-        + ∑ y, (if y ∉ ({i, j} : Finset V) ∧ G.Adj i y then ρ i y else 0)
-        + ∑ x, (if x ∉ ({i, j} : Finset V) ∧ G.Adj x i then ρ x i else 0)
-        + ∑ y, (if y ∉ ({i, j} : Finset V) ∧ G.Adj j y then ρ j y else 0)
-        + ∑ x, (if x ∉ ({i, j} : Finset V) ∧ G.Adj x j then ρ x j else 0) := by
-    simp only [ite_at_ij (G := G) hij ρ, Finset.sum_add_distrib]
-    rw [sum_sum_pair_eq, sum_sum_pair_eq, sum_sum_fst_eq, sum_sum_snd_eq, sum_sum_fst_eq,
-      sum_sum_snd_eq]
-  have hf1 : (if G.Adj i j then ρ i j else 0) ≤ ρ i j := by
-    split_ifs
-    · exact le_rfl
-    · exact hρ.1 i j
-  have hf2 : (if G.Adj j i then ρ j i else 0) ≤ ρ j i := by
-    split_ifs
-    · exact le_rfl
-    · exact hρ.1 j i
-  have hf1n : 0 ≤ (if G.Adj i j then ρ i j else 0) := by
-    split_ifs
-    · exact hρ.1 i j
-    · exact le_rfl
-  have hf2n : 0 ≤ (if G.Adj j i then ρ j i else 0) := by
-    split_ifs
-    · exact hρ.1 j i
-    · exact le_rfl
-  have hF : (if G.Adj i j then ρ i j else 0) + (if G.Adj j i then ρ j i else 0) ≤ flowIJ μ i j := by
-    unfold flowIJ
-    exact add_le_add (le_min (hf1.trans (plan_le_resP hρ i j)) (hf1.trans (plan_le_resN hρ i j)))
-      (le_min (hf2.trans (plan_le_resP hρ j i)) (hf2.trans (plan_le_resN hρ j i)))
-  have hri := row_at_le (G := G) hρ ({i, j} : Finset V) (u := i) hjI
-  have hci := col_at_le (G := G) hρ ({i, j} : Finset V) (u := i) hjI
-  have hrj := row_at_le (G := G) hρ ({i, j} : Finset V) (u := j) hiI
-  have hcj := col_at_le (G := G) hρ ({i, j} : Finset V) (u := j) hiI
-  have hOi : ∑ y, (if y ∉ ({i, j} : Finset V) ∧ G.Adj i y then ρ i y else 0)
-      + ∑ x, (if x ∉ ({i, j} : Finset V) ∧ G.Adj x i then ρ x i else 0) ≤ oppNbr G μ i j i := by
-    unfold oppNbr
-    exact add_le_add (rowpart_le_opp hρ _ i) (colpart_le_opp hρ _ i)
-  have hOj : ∑ y, (if y ∉ ({i, j} : Finset V) ∧ G.Adj j y then ρ j y else 0)
-      + ∑ x, (if x ∉ ({i, j} : Finset V) ∧ G.Adj x j then ρ x j else 0) ≤ oppNbr G μ i j j := by
-    unfold oppNbr
-    exact add_le_add (rowpart_le_opp hρ _ j) (colpart_le_opp hρ _ j)
-  have hmi : ∑ y, (if y ∉ ({i, j} : Finset V) ∧ G.Adj i y then ρ i y else 0)
-      + ∑ x, (if x ∉ ({i, j} : Finset V) ∧ G.Adj x i then ρ x i else 0)
-      ≤ min (oppNbr G μ i j i)
-          (resAbs μ i j i - ((if G.Adj i j then ρ i j else 0) + (if G.Adj j i then ρ j i else 0))) := by
-    refine le_min hOi ?_
-    unfold resAbs
-    linarith
-  have hmj : ∑ y, (if y ∉ ({i, j} : Finset V) ∧ G.Adj j y then ρ j y else 0)
-      + ∑ x, (if x ∉ ({i, j} : Finset V) ∧ G.Adj x j then ρ x j else 0)
-      ≤ min (oppNbr G μ i j j)
-          (resAbs μ i j j - ((if G.Adj i j then ρ i j else 0) + (if G.Adj j i then ρ j i else 0))) := by
-    refine le_min hOj ?_
-    unfold resAbs
-    linarith
-  have hBF := hB _ (add_nonneg hf1n hf2n) hF
-  have hat : ∑ x, ∑ y, (if G.Adj x y ∧ (x ∈ ({i, j} : Finset V) ∨ y ∈ ({i, j} : Finset V))
-      then ρ x y else 0) ≤ B := by
-    rw [hid]
-    linarith
-  calc adjMass G ρ ≤ _ := hsplit
-    _ ≤ B + ∑ l ∈ Finset.univ.image b,
-          min (∑ x ∈ Finset.univ.filter (fun x => b x = l ∧ x ∉ ({i, j} : Finset V)), capS G μ i j x)
-            (∑ y ∈ Finset.univ.filter (fun y => b y = l ∧ y ∉ ({i, j} : Finset V)), capD G μ i j y) :=
-        add_le_add hat (outside_le_blocks hρ ({i, j} : Finset V) b hb)
-
-/-! ### Distance `3` from the neighbourhoods -/
-
-/-- A vertex of `U_i` without cross edges, all of whose neighbours are `i` or have no neighbour in
-`U_j`, is at distance `3` from every vertex of `U_j`. -/
 theorem far_of_closedX (h3 : ThreeApart G d) {x : V} (hx : x ∈ uniq G i j)
     (hnc : ∀ y ∈ uniq G j i, ¬ G.Adj x y)
     (hnb : ∀ w, G.Adj x w → w = i ∨ ∀ y ∈ uniq G j i, ¬ G.Adj w y)
@@ -720,8 +528,6 @@ theorem far_of_closedX (h3 : ThreeApart G d) {x : V} (hx : x ∈ uniq G i j)
     · exact (mem_uniq.1 hy).2.2 hwy
     · exact hw y hy hwy
 
-/-- A vertex of `U_j` without cross edges, all of whose neighbours are `j` or have no neighbour in
-`U_i`, is at distance `3` from every vertex of `U_i`. -/
 theorem far_of_closedY (h3 : ThreeApart G d) {y : V} (hy : y ∈ uniq G j i)
     (hnc : ∀ x ∈ uniq G i j, ¬ G.Adj x y)
     (hnb : ∀ w, G.Adj y w → w = j ∨ ∀ x ∈ uniq G i j, ¬ G.Adj w x)
@@ -736,8 +542,6 @@ theorem far_of_closedY (h3 : ThreeApart G d) {y : V} (hy : y ∈ uniq G j i)
     · exact (mem_uniq.1 hx).2.2 hxw.symm
     · exact hw x hx hxw.symm
 
-/-- The degree condition for `Y₃`: if `d_y = 1 + |N(y) ∩ C|` and `y ∼ j`, every neighbour of `y`
-is `j` or a common neighbour. -/
 lemma nbr_of_degree_eq {y : V} (hyj : G.Adj j y)
     (hdeg : G.degree y = 1 + (G.neighborFinset y ∩ common G i j).card) :
     ∀ w, G.Adj y w → w = j ∨ w ∈ common G i j := by

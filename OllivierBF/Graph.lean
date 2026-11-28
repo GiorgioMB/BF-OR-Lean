@@ -1,8 +1,4 @@
-/-
-  Graph metrics and the local structure of an edge `(i, j)`: the common neighbours `C`, the unique
-  neighbours `U_i`, `U_j`, and the overlap `S = {i, j} ∪ C`. The shortest-path distance of a connected
-  graph is a graph metric (`graphMetric_dist`).
--/
+/- Graph metrics and the neighbourhoods of an edge. -/
 module
 
 public import OllivierBF.Transport
@@ -18,8 +14,8 @@ namespace OllivierBF
 variable {V : Type*} [Fintype V] [DecidableEq V]
 variable (G : SimpleGraph V) [DecidableRel G.Adj]
 
-/-- The facts about the graph distance that the paper uses. Any `d` satisfying them
-works; `graphMetric_dist` shows that the shortest-path distance does. -/
+/-- The properties of the distance that the results use; the shortest-path distance of a
+connected graph has them (`graphMetric_dist`). -/
 structure GraphMetric (d : V → V → ℝ) : Prop where
   self : ∀ x, d x x = 0
   adj : ∀ {x y}, G.Adj x y → d x y = 1
@@ -45,7 +41,6 @@ lemma GraphMetric.le_three {d : V → V → ℝ} (hd : GraphMetric G d) {x a b y
   have h' := hd.le_two h₂ h₃
   rw [hd.adj h₁] at h; linarith
 
-/-- The shortest-path distance of a connected graph is a `GraphMetric`. -/
 lemma graphMetric_dist (hG : G.Connected) : GraphMetric G (fun x y => (G.dist x y : ℝ)) where
   self x := by simp
   adj h := by simp [SimpleGraph.dist_eq_one_iff_adj.mpr h]
@@ -62,18 +57,16 @@ lemma graphMetric_dist (hG : G.Connected) : GraphMetric G (fun x y => (G.dist x 
 
 variable (G)
 
-/-- Common neighbours `C = N(i) ∩ N(j)`. -/
+/-- `C = N(i) ∩ N(j)`. -/
 def common (i j : V) : Finset V := G.neighborFinset i ∩ G.neighborFinset j
 
-/-- Unique neighbours `U_u = N(u) \ N(v) \ {v}` of `u` with respect to the edge `(u, v)`. -/
+/-- `U_u = N(u) \ N(v) \ {v}` for the edge `(u, v)`. -/
 def uniq (u v : V) : Finset V := (G.neighborFinset u \ G.neighborFinset v).erase v
 
-/-- The overlap `S = {i, j} ∪ C`. -/
+/-- `S = {i, j} ∪ C`. -/
 def overlap (i j : V) : Finset V := insert i (insert j (common G i j))
 
 variable {G}
-
-/-! ### Membership -/
 
 lemma mem_common {i j k : V} : k ∈ common G i j ↔ G.Adj i k ∧ G.Adj j k := by
   simp [common, SimpleGraph.mem_neighborFinset]

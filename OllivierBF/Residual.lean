@@ -1,14 +1,4 @@
-/-
-  The transport problem depends only on the residual (Villani, *Topics in Optimal Transportation*,
-  Corollary 1.16, in the finite form needed here): every coupling of `μ` and `ν` can be replaced by a
-  coupling of the residuals `μ − min(μ, ν)` and `ν − min(μ, ν)` that costs no more. The proof splices,
-  at each vertex in turn, the mass that passes through it (triangle inequality). With the diagonal
-  coupling of `min(μ, ν)` this gives `W₁(μ, ν) = W₁(μ − min, ν − min)` (`W1_eq_W1_resid`).
-
-  The file also contains the savings form of the cost used in Proposition 4.2 of the paper
-  (`cost_eq_three_mass_sub_savings`) and the extension of partial plans to couplings
-  (`exists_extension`).
--/
+/- `W₁` depends only on the residuals; savings of partial plans. -/
 module
 
 public import OllivierBF.Transport
@@ -23,10 +13,9 @@ namespace OllivierBF
 
 variable {V : Type*} [Fintype V] [DecidableEq V]
 
-/-- Total mass of a plan. -/
 def mass (π : V → V → ℝ) : ℝ := ∑ x, ∑ y, π x y
 
-/-- Savings of a plan, `Σ (3 − d) π` (Proposition 4.2 of the paper). -/
+/-- The savings `Σ (3 − d) π`. -/
 def savings (d : V → V → ℝ) (π : V → V → ℝ) : ℝ := ∑ x, ∑ y, (3 - d x y) * π x y
 
 /-- A partial plan: nonnegative, with row sums at most `μ` and column sums at most `ν`. -/
@@ -34,8 +23,6 @@ def IsSubPlan (μ ν : V → ℝ) (π : V → V → ℝ) : Prop :=
   (∀ x y, 0 ≤ π x y) ∧ (∀ x, ∑ y, π x y ≤ μ x) ∧ (∀ y, ∑ x, π x y ≤ ν y)
 
 variable {d : V → V → ℝ}
-
-/-! ### Small facts about couplings and costs -/
 
 lemma IsCoupling.of_marg_eq {μ ν μ' ν' : V → ℝ} {π : V → V → ℝ} (h : IsCoupling μ ν π)
     (hμ : ∀ x, μ x = μ' x) (hν : ∀ y, ν y = ν' y) : IsCoupling μ' ν' π :=
@@ -55,7 +42,6 @@ lemma cost_eq_three_mass_sub_savings (π : V → V → ℝ) :
   refine Finset.sum_congr rfl fun y _ => ?_
   ring
 
-/-- Linearity of the cost in the plan, in the form used by the splicing step. -/
 lemma cost_lin (π a b c : V → V → ℝ) (k : ℝ) :
     cost d (fun u v => π u v - a u v - b u v + k * c u v)
       = cost d π - cost d a - cost d b + k * cost d c := by
@@ -65,10 +51,6 @@ lemma cost_lin (π a b c : V → V → ℝ) (k : ℝ) :
   unfold cost
   simp only [h, Finset.sum_add_distrib, Finset.sum_sub_distrib, ← Finset.mul_sum]
 
-/-! ### Splicing the mass that passes through one vertex -/
-
-/-- Removing mass `e ≤ π z z` from a diagonal entry lowers both marginals by `e` at `z` and keeps the
-cost. -/
 lemma IsCoupling.dropDiag {α β : V → ℝ} {π : V → V → ℝ} (hπ : IsCoupling α β π)
     (hself : ∀ x, d x x = 0) (z : V) {e : ℝ} (he : e ≤ π z z) :
     IsCoupling (fun x => α x - if x = z then e else 0) (fun y => β y - if y = z then e else 0)
@@ -101,12 +83,9 @@ lemma IsCoupling.dropDiag {α β : V → ℝ} {π : V → V → ℝ} (hπ : IsCo
       simp [hself]
     · simp [h]
 
-/-- **Splicing at `z`.** If no mass stays at `z` and `0 < c` is at most both marginals there, the
-mass `c` that enters and leaves `z` can be routed past it: proportionally, from every in-neighbour
-to every out-neighbour. By the triangle inequality the cost does not increase. -/
 lemma splice_core {α β : V → ℝ} {π : V → V → ℝ} (hπ : IsCoupling α β π)
-    (htri : ∀ x y w, d x w ≤ d x y + d y w) (z : V) (hzz : π z z = 0) {c : ℝ}
-    (hc0 : 0 < c) (hcα : c ≤ α z) (hcβ : c ≤ β z) :
+    (z : V) (htri : ∀ u w, 0 < α u → 0 < β w → d u w ≤ d u z + d z w) (hzz : π z z = 0)
+    {c : ℝ} (hc0 : 0 < c) (hcα : c ≤ α z) (hcβ : c ≤ β z) :
     ∃ π', IsCoupling (fun x => α x - if x = z then c else 0)
         (fun y => β y - if y = z then c else 0) π' ∧ cost d π' ≤ cost d π := by
   have hA : 0 < α z := lt_of_lt_of_le hc0 hcα
@@ -127,7 +106,7 @@ lemma splice_core {α β : V → ℝ} {π : V → V → ℝ} (hπ : IsCoupling �
   refine ⟨fun u v => π u v - (if v = z then c / β z * π u z else 0)
       - (if u = z then c / α z * π z v else 0) + c / (β z * α z) * (π u z * π z v),
     ⟨fun u v => ?_, fun u => ?_, fun v => ?_⟩, ?_⟩
-  · -- nonnegativity
+  ·
     show 0 ≤ π u v - (if v = z then c / β z * π u z else 0)
       - (if u = z then c / α z * π z v else 0) + c / (β z * α z) * (π u z * π z v)
     have h1 := hπ.1 u v
@@ -153,7 +132,7 @@ lemma splice_core {α β : V → ℝ} {π : V → V → ℝ} (hπ : IsCoupling �
         linarith
       · rw [ite_eq_right hv, ite_eq_right hu]
         linarith
-  · -- row sums
+  ·
     show ∑ v, (π u v - (if v = z then c / β z * π u z else 0)
         - (if u = z then c / α z * π z v else 0) + c / (β z * α z) * (π u z * π z v))
         = α u - if u = z then c else 0
@@ -172,7 +151,7 @@ lemma splice_core {α β : V → ℝ} {π : V → V → ℝ} (hπ : IsCoupling �
     · have e2 : ∑ v, (if u = z then c / α z * π z v else 0) = 0 := by simp [hu]
       rw [e2, ite_eq_right hu]
       ring
-  · -- column sums
+  ·
     show ∑ u, (π u v - (if v = z then c / β z * π u z else 0)
         - (if u = z then c / α z * π z v else 0) + c / (β z * α z) * (π u z * π z v))
         = β v - if v = z then c else 0
@@ -191,7 +170,7 @@ lemma splice_core {α β : V → ℝ} {π : V → V → ℝ} (hπ : IsCoupling �
     · have e1 : ∑ u, (if v = z then c / β z * π u z else 0) = 0 := by simp [hv]
       rw [e1, ite_eq_right hv]
       ring
-  · -- cost
+  ·
     have hlin : cost d (fun u v => π u v - (if v = z then c / β z * π u z else 0)
         - (if u = z then c / α z * π z v else 0) + c / (β z * α z) * (π u z * π z v))
         = cost d π - cost d (fun u v => if v = z then c / β z * π u z else 0)
@@ -221,7 +200,19 @@ lemma splice_core {α β : V → ℝ} {π : V → V → ℝ} (hπ : IsCoupling �
       calc ∑ u, ∑ v, d u v * (π u z * π z v)
           ≤ ∑ u, ∑ v, (d u z + d z v) * (π u z * π z v) := by
             refine Finset.sum_le_sum fun u _ => Finset.sum_le_sum fun v _ => ?_
-            exact mul_le_mul_of_nonneg_right (htri u z v) (mul_nonneg (hπ.1 u z) (hπ.1 z v))
+            rcases (hπ.1 u z).eq_or_lt with hu | hu
+            · rw [← hu]; simp
+            rcases (hπ.1 z v).eq_or_lt with hv | hv
+            · rw [← hv]; simp
+            have hαu : 0 < α u := by
+              rw [← hπ.2.1 u]
+              exact lt_of_lt_of_le hu (Finset.single_le_sum (f := fun v' => π u v')
+                (fun v' _ => hπ.1 u v') (Finset.mem_univ z))
+            have hβv : 0 < β v := by
+              rw [← hπ.2.2 v]
+              exact lt_of_lt_of_le hv (Finset.single_le_sum (f := fun u' => π u' v)
+                (fun u' _ => hπ.1 u' v) (Finset.mem_univ z))
+            exact mul_le_mul_of_nonneg_right (htri u v hαu hβv) (mul_nonneg (hπ.1 u z) (hπ.1 z v))
         _ = (∑ u, d u z * π u z) * α z + β z * ∑ v, d z v * π z v := by
             rw [← hrow, ← hcol, Finset.sum_mul_sum, Finset.sum_mul_sum, ← Finset.sum_add_distrib]
             refine Finset.sum_congr rfl fun u _ => ?_
@@ -236,11 +227,10 @@ lemma splice_core {α β : V → ℝ} {π : V → V → ℝ} (hπ : IsCoupling �
       ring
     linarith
 
-/-- **Splicing at one vertex**, with possibly some mass kept in place at `z`: the marginals at `z`
-can be lowered by any `c` at most both marginals, without increasing the cost. -/
 theorem splice_vertex {α β : V → ℝ} {π : V → V → ℝ} (hπ : IsCoupling α β π)
-    (hself : ∀ x, d x x = 0) (htri : ∀ x y w, d x w ≤ d x y + d y w)
-    (z : V) {c : ℝ} (hcα : c ≤ α z) (hcβ : c ≤ β z) :
+    (hself : ∀ x, d x x = 0) (z : V) {c : ℝ}
+    (htri : 0 < c → ∀ u w, 0 < α u → 0 < β w → d u w ≤ d u z + d z w)
+    (hcα : c ≤ α z) (hcβ : c ≤ β z) :
     ∃ π', IsCoupling (fun x => α x - if x = z then c else 0)
         (fun y => β y - if y = z then c else 0) π' ∧ cost d π' ≤ cost d π := by
   by_cases hle : c ≤ π z z
@@ -256,7 +246,17 @@ theorem splice_vertex {α β : V → ℝ} {π : V → V → ℝ} (hπ : IsCoupli
     have hβ' : c - π z z ≤ (fun y => β y - if y = z then π z z else 0) z := by
       show c - π z z ≤ β z - (if z = z then π z z else 0)
       rw [ite_eq_left rfl]; linarith
-    obtain ⟨π', hπ', hcost⟩ := splice_core (d := d) h1 htri z hz1 hc' hα' hβ'
+    have hcpos : 0 < c := by linarith [hπ.1 z z]
+    have htri' : ∀ u w, 0 < (fun x => α x - if x = z then π z z else 0) u →
+        0 < (fun y => β y - if y = z then π z z else 0) w → d u w ≤ d u z + d z w := by
+      intro u w hu hw
+      have hu2 : 0 < α u - (if u = z then π z z else 0) := hu
+      have hw2 : 0 < β w - (if w = z then π z z else 0) := hw
+      have hzz0 := hπ.1 z z
+      have hu3 : 0 < α u := by split_ifs at hu2 <;> linarith
+      have hw3 : 0 < β w := by split_ifs at hw2 <;> linarith
+      exact htri hcpos u w hu3 hw3
+    obtain ⟨π', hπ', hcost⟩ := splice_core (d := d) h1 z htri' hz1 hc' hα' hβ'
     refine ⟨π', hπ'.of_marg_eq (fun x => ?_) (fun y => ?_), hcost.trans h2.le⟩
     · show α x - (if x = z then π z z else 0) - (if x = z then c - π z z else 0)
           = α x - if x = z then c else 0
@@ -265,12 +265,9 @@ theorem splice_vertex {α β : V → ℝ} {π : V → V → ℝ} (hπ : IsCoupli
           = β y - if y = z then c else 0
       split_ifs <;> ring
 
-/-! ### The residual reduction -/
-
-/-- **Every coupling has a residual coupling that costs no more** (Villani, Corollary 1.16, finite
-form). -/
 theorem exists_resid_coupling_le {μ ν : V → ℝ} {π : V → V → ℝ} (hπ : IsCoupling μ ν π)
-    (hself : ∀ x, d x x = 0) (htri : ∀ x y w, d x w ≤ d x y + d y w) :
+    (hμ : ∀ x, 0 ≤ μ x) (hν : ∀ x, 0 ≤ ν x) (hself : ∀ x, d x x = 0)
+    (hT : ∀ x z w, 0 < μ x → 0 < min (μ z) (ν z) → 0 < ν w → d x w ≤ d x z + d z w) :
     ∃ ρ, IsCoupling (fun x => μ x - min (μ x) (ν x)) (fun y => ν y - min (μ y) (ν y)) ρ ∧
       cost d ρ ≤ cost d π := by
   have key : ∀ s : Finset V, ∃ ρ,
@@ -289,7 +286,19 @@ theorem exists_resid_coupling_le {μ ν : V → ℝ} {π : V → V → ℝ} (hπ
         show min (μ a) (ν a) ≤ ν a - (if a ∈ s then min (μ a) (ν a) else 0)
         rw [ite_eq_right ha, sub_zero]
         exact min_le_right _ _
-      obtain ⟨ρ', hρ', hcost'⟩ := splice_vertex (d := d) hρ hself htri a hα hβ
+      have htri_a : 0 < min (μ a) (ν a) → ∀ u w,
+          0 < (fun x => μ x - if x ∈ s then min (μ x) (ν x) else 0) u →
+          0 < (fun y => ν y - if y ∈ s then min (μ y) (ν y) else 0) w →
+          d u w ≤ d u a + d a w := by
+        intro hm u w hu hw
+        have hu2 : 0 < μ u - (if u ∈ s then min (μ u) (ν u) else 0) := hu
+        have hw2 : 0 < ν w - (if w ∈ s then min (μ w) (ν w) else 0) := hw
+        have hmu : 0 ≤ min (μ u) (ν u) := le_min (hμ u) (hν u)
+        have hmw : 0 ≤ min (μ w) (ν w) := le_min (hμ w) (hν w)
+        have hu3 : 0 < μ u := by split_ifs at hu2 <;> linarith
+        have hw3 : 0 < ν w := by split_ifs at hw2 <;> linarith
+        exact hT u a w hu3 hm hw3
+      obtain ⟨ρ', hρ', hcost'⟩ := splice_vertex (d := d) hρ hself a htri_a hα hβ
       refine ⟨ρ', hρ'.of_marg_eq (fun x => ?_) (fun y => ?_), hcost'.trans hcost⟩
       · show μ x - (if x ∈ s then min (μ x) (ν x) else 0) - (if x = a then min (μ a) (ν a) else 0)
             = μ x - if x ∈ insert a s then min (μ x) (ν x) else 0
@@ -306,7 +315,6 @@ theorem exists_resid_coupling_le {μ ν : V → ℝ} {π : V → V → ℝ} (hπ
   obtain ⟨ρ, hρ, hcost⟩ := key Finset.univ
   exact ⟨ρ, hρ.of_marg_eq (fun x => by simp) (fun y => by simp), hcost⟩
 
-/-- Residual couplings exist when the masses agree. -/
 lemma exists_resid_coupling {μ ν : V → ℝ}
     (hmass : ∑ x, μ x = ∑ x, ν x) :
     ∃ ρ, IsCoupling (fun x => μ x - min (μ x) (ν x)) (fun y => ν y - min (μ y) (ν y)) ρ := by
@@ -318,10 +326,11 @@ lemma exists_resid_coupling {μ ν : V → ℝ}
     (fun _ _ _ _ => le_rfl)
   exact ⟨ρ, hρ⟩
 
-/-- **`W₁` depends only on the residual.** -/
+/-- `W₁` depends only on the residuals (Villani, Corollary 1.16). The triangle inequality is
+needed only through the vertices where both measures are positive. -/
 theorem W1_eq_W1_resid {μ ν : V → ℝ} (hμ : ∀ x, 0 ≤ μ x) (hν : ∀ x, 0 ≤ ν x)
     (hmass : ∑ x, μ x = ∑ x, ν x) (hd0 : ∀ x y, 0 ≤ d x y) (hself : ∀ x, d x x = 0)
-    (htri : ∀ x y w, d x w ≤ d x y + d y w) :
+    (hT : ∀ x z w, 0 < μ x → 0 < min (μ z) (ν z) → 0 < ν w → d x w ≤ d x z + d z w) :
     W1 d μ ν = W1 d (fun x => μ x - min (μ x) (ν x)) (fun y => ν y - min (μ y) (ν y)) := by
   obtain ⟨ρ₀, hρ₀⟩ := exists_resid_coupling hmass
   have hm : ∀ x, 0 ≤ min (μ x) (ν x) := fun x => le_min (hμ x) (hν x)
@@ -338,13 +347,9 @@ theorem W1_eq_W1_resid {μ ν : V → ℝ} (hμ : ∀ x, 0 ≤ μ x) (hν : ∀ 
       _ = cost d ρ := by rw [cost_add, cost_diag hself, zero_add]
   · apply le_W1 ⟨_, hglue ρ₀ hρ₀⟩
     intro π hπ
-    obtain ⟨ρ, hρ, hcost⟩ := exists_resid_coupling_le (d := d) hπ hself htri
+    obtain ⟨ρ, hρ, hcost⟩ := exists_resid_coupling_le (d := d) hπ hμ hν hself hT
     exact (W1_le_cost hd0 hρ).trans hcost
 
-/-! ### Extending partial plans -/
-
-/-- A partial plan extends to a coupling without losing savings, when every pair between the
-supports is at distance at most `3`. -/
 theorem exists_extension {μ ν : V → ℝ} {π : V → V → ℝ} (hπ : IsSubPlan μ ν π)
     (hmass : ∑ x, μ x = ∑ y, ν y) (h3 : ∀ x y, 0 < μ x → 0 < ν y → d x y ≤ 3) :
     ∃ ρ, IsCoupling μ ν ρ ∧ savings d π ≤ savings d ρ := by
@@ -382,5 +387,99 @@ theorem exists_extension {μ ν : V → ℝ} {π : V → V → ℝ} (hπ : IsSub
       linarith
     rw [hs]
     linarith
+
+theorem isLUB_savings {c : V → V → ℝ} {α β : V → ℝ} (hmass : ∑ x, α x = ∑ y, β y)
+    (hc : ∀ x y, 0 ≤ c x y) (h3 : ∀ x y, 0 < α x → 0 < β y → c x y ≤ 3)
+    (hne : ∃ ρ, IsCoupling α β ρ) :
+    IsLUB (savings c '' {π | IsSubPlan α β π}) (3 * ∑ x, α x - W1 c α β) := by
+  refine ⟨?_, ?_⟩
+  · rintro _ ⟨π, hπ, rfl⟩
+    have hπ' : IsSubPlan α β π := hπ
+    obtain ⟨ρ, hρ, hsav⟩ := exists_extension (d := c) hπ' hmass h3
+    have hW := W1_le_cost hc hρ
+    rw [cost_eq_three_mass_sub_savings, hρ.mass_eq] at hW
+    linarith
+  · intro s hs
+    have hW : 3 * ∑ x, α x - s ≤ W1 c α β := le_W1 hne fun ρ hρ => by
+      have hρs := hs ⟨ρ, ⟨hρ.1, fun x => (hρ.2.1 x).le, fun y => (hρ.2.2 y).le⟩, rfl⟩
+      rw [cost_eq_three_mass_sub_savings, hρ.mass_eq]
+      linarith
+    linarith
+
+lemma sum_le_savings_of_le {c c' : V → V → ℝ} {π : V → V → ℝ} (hπ : ∀ x y, 0 ≤ π x y)
+    (h : ∀ x y, 0 < π x y → c x y ≤ c' x y) :
+    ∑ x, ∑ y, (3 - c' x y) * π x y ≤ savings c π := by
+  unfold savings
+  refine Finset.sum_le_sum fun x _ => Finset.sum_le_sum fun y _ => ?_
+  rcases (hπ x y).eq_or_lt with h0 | h0
+  · rw [← h0]
+    simp
+  · exact mul_le_mul_of_nonneg_right (by linarith [h x y h0]) h0.le
+
+section
+
+variable {α β : V → ℝ}
+
+lemma isSubPlan_zero (hα : ∀ x, 0 ≤ α x) (hβ : ∀ y, 0 ≤ β y) :
+    IsSubPlan α β (fun _ _ => 0) :=
+  ⟨fun _ _ => le_rfl, fun x => by simpa using hα x, fun y => by simpa using hβ y⟩
+
+lemma IsSubPlan.le_row {π : V → V → ℝ} (hπ : IsSubPlan α β π) (x y : V) : π x y ≤ α x :=
+  (Finset.single_le_sum (f := fun y' => π x y') (fun y' _ => hπ.1 x y') (Finset.mem_univ y)).trans
+    (hπ.2.1 x)
+
+lemma isClosed_subPlan : IsClosed {π : V → V → ℝ | IsSubPlan α β π} := by
+  have hset : {π : V → V → ℝ | IsSubPlan α β π} =
+      (⋂ x, ⋂ y, {π : V → V → ℝ | 0 ≤ π x y}) ∩
+        ((⋂ x, {π : V → V → ℝ | ∑ y, π x y ≤ α x}) ∩ ⋂ y, {π : V → V → ℝ | ∑ x, π x y ≤ β y}) := by
+    ext π
+    simp only [Set.mem_ofPred_eq, Set.mem_inter_iff, Set.mem_iInter]
+    exact Iff.rfl
+  rw [hset]
+  exact (isClosed_iInter fun x => isClosed_iInter fun y =>
+      isClosed_le continuous_const (by fun_prop)).inter
+    ((isClosed_iInter fun x => isClosed_le (by fun_prop) continuous_const).inter
+      (isClosed_iInter fun y => isClosed_le (by fun_prop) continuous_const))
+
+theorem exists_max_subPlan (hα : ∀ x, 0 ≤ α x) (hβ : ∀ y, 0 ≤ β y)
+    (P : (V → V → ℝ) → Prop) (hP : IsClosed {π | P π}) (hP0 : P fun _ _ => 0)
+    (f : (V → V → ℝ) → ℝ) (hf : Continuous f) :
+    ∃ π, IsSubPlan α β π ∧ P π ∧ ∀ π', IsSubPlan α β π' → P π' → f π' ≤ f π := by
+  have hsub : ({π : V → V → ℝ | IsSubPlan α β π} ∩ {π | P π}) ⊆
+      Set.univ.pi fun x => Set.univ.pi fun _ : V => Set.Icc (0 : ℝ) (α x) := by
+    intro π hπ
+    have hπS : IsSubPlan α β π := hπ.1
+    rw [Set.mem_univ_pi]
+    intro x
+    rw [Set.mem_univ_pi]
+    intro y
+    exact ⟨hπS.1 x y, hπS.le_row x y⟩
+  have hcomp : IsCompact ({π : V → V → ℝ | IsSubPlan α β π} ∩ {π | P π}) :=
+    (isCompact_univ_pi fun x => isCompact_univ_pi fun _ => isCompact_Icc).of_isClosed_subset
+      ((isClosed_subPlan (α := α) (β := β)).inter hP) hsub
+  have hne : ({π : V → V → ℝ | IsSubPlan α β π} ∩ {π | P π}).Nonempty :=
+    ⟨fun _ _ => 0, isSubPlan_zero hα hβ, hP0⟩
+  obtain ⟨π, hπ, hmax⟩ := hcomp.exists_isMaxOn hne hf.continuousOn
+  exact ⟨π, hπ.1, hπ.2, fun π' h1 h2 => isMaxOn_iff.mp hmax π' ⟨h1, h2⟩⟩
+
+lemma continuous_savings (c : V → V → ℝ) : Continuous (savings c) := by
+  show Continuous fun π : V → V → ℝ => ∑ x, ∑ y, (3 - c x y) * π x y
+  fun_prop
+
+lemma isGreatest_of_isLUB (hα : ∀ x, 0 ≤ α x) (hβ : ∀ y, 0 ≤ β y)
+    {f : (V → V → ℝ) → ℝ} (hf : Continuous f) {a : ℝ} (h : IsLUB (f '' {π | IsSubPlan α β π}) a) :
+    IsGreatest (f '' {π | IsSubPlan α β π}) a := by
+  have hP : IsClosed {π : V → V → ℝ | True} := by
+    rw [Set.ofPred_true]
+    exact isClosed_univ
+  obtain ⟨π, hπ, -, hmax⟩ := exists_max_subPlan hα hβ (fun _ => True) hP trivial f hf
+  have hG : IsGreatest (f '' {π | IsSubPlan α β π}) (f π) :=
+    ⟨⟨π, hπ, rfl⟩, by
+      rintro _ ⟨π', hπ', rfl⟩
+      exact hmax π' hπ' trivial⟩
+  rw [le_antisymm (h.2 hG.2) (h.1 hG.1)]
+  exact hG
+
+end
 
 end OllivierBF

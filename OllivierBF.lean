@@ -5,10 +5,5 @@ public import OllivierBF.Graph
 public import OllivierBF.Residual
 public import OllivierBF.OneStep
 public import OllivierBF.TQ
-public import OllivierBF.PaperTQ
 public import OllivierBF.AttainableRange
-public import OllivierBF.ResidualsFull
-public import OllivierBF.SavingsMax
-public import OllivierBF.RangeSavings
-public import OllivierBF.MaxFlow
-public import OllivierBF.RangeTQ
+public import OllivierBF.PaperTQ

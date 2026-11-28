@@ -1,11 +1,4 @@
-/-
-  Finite optimal transport on a finite type `V` with an arbitrary cost `d`.
-
-  `W1 d μ ν` is the infimum of `cost d π` over couplings `π` of `μ` and `ν`.
-  We never need existence of optimal couplings: every result in the paper is an
-  inequality, obtained either from an explicit coupling (`W1_le_cost`) or from a
-  bound valid for every coupling (`le_W1`).
--/
+/- Couplings and `W₁`. -/
 module
 
 public import Mathlib
@@ -20,14 +13,14 @@ namespace OllivierBF
 
 variable {V : Type*} [Fintype V] [DecidableEq V]
 
-/-- `π` is a coupling (transport plan) of `μ` and `ν`. Masses need not be one. -/
+/-- `π` couples `μ` and `ν`. -/
 def IsCoupling (μ ν : V → ℝ) (π : V → V → ℝ) : Prop :=
   (∀ x y, 0 ≤ π x y) ∧ (∀ x, ∑ y, π x y = μ x) ∧ (∀ y, ∑ x, π x y = ν y)
 
-/-- Transport cost of a plan. -/
+/-- The transport cost. -/
 def cost (d : V → V → ℝ) (π : V → V → ℝ) : ℝ := ∑ x, ∑ y, d x y * π x y
 
-/-- Wasserstein-1 distance (infimum of costs over couplings). -/
+/-- `W₁`, the infimum of the costs of the couplings. -/
 noncomputable def W1 (d : V → V → ℝ) (μ ν : V → ℝ) : ℝ :=
   sInf (cost d '' {π | IsCoupling μ ν π})
 
@@ -42,11 +35,9 @@ lemma bddBelow_costs (hd : ∀ x y, 0 ≤ d x y) :
     BddBelow (cost d '' {π | IsCoupling μ ν π}) :=
   ⟨0, by rintro _ ⟨π, hπ, rfl⟩; exact cost_nonneg hd hπ.1⟩
 
-/-- Any explicit coupling bounds `W1` from above. -/
 theorem W1_le_cost (hd : ∀ x y, 0 ≤ d x y) (hπ : IsCoupling μ ν π) : W1 d μ ν ≤ cost d π :=
   csInf_le (bddBelow_costs hd) ⟨π, hπ, rfl⟩
 
-/-- A bound valid for every coupling bounds `W1` from below. -/
 theorem le_W1 {b : ℝ} (hne : ∃ π, IsCoupling μ ν π)
     (h : ∀ π, IsCoupling μ ν π → b ≤ cost d π) : b ≤ W1 d μ ν := by
   obtain ⟨π₀, h₀⟩ := hne
@@ -54,13 +45,10 @@ theorem le_W1 {b : ℝ} (hne : ∃ π, IsCoupling μ ν π)
 
 end basic
 
-/-! ## Building couplings -/
-
 section build
 
 variable {d : V → V → ℝ}
 
-/-- Nonnegative combination of couplings. -/
 lemma IsCoupling.combo {μ₁ ν₁ μ₂ ν₂ : V → ℝ} {π₁ π₂ : V → V → ℝ} {s t : ℝ}
     (hs : 0 ≤ s) (ht : 0 ≤ t) (h₁ : IsCoupling μ₁ ν₁ π₁) (h₂ : IsCoupling μ₂ ν₂ π₂) :
     IsCoupling (fun x => s * μ₁ x + t * μ₂ x) (fun y => s * ν₁ y + t * ν₂ y)
@@ -80,7 +68,6 @@ lemma cost_combo (π₁ π₂ : V → V → ℝ) (s t : ℝ) :
   refine Finset.sum_congr rfl fun y _ => ?_
   ring
 
-/-- Sum of couplings (the `s = t = 1` case, stated with plain addition). -/
 lemma IsCoupling.add {μ₁ ν₁ μ₂ ν₂ : V → ℝ} {π₁ π₂ : V → V → ℝ}
     (h₁ : IsCoupling μ₁ ν₁ π₁) (h₂ : IsCoupling μ₂ ν₂ π₂) :
     IsCoupling (fun x => μ₁ x + μ₂ x) (fun y => ν₁ y + ν₂ y) (fun x y => π₁ x y + π₂ x y) := by
@@ -90,19 +77,16 @@ lemma cost_add (π₁ π₂ : V → V → ℝ) :
     cost d (fun x y => π₁ x y + π₂ x y) = cost d π₁ + cost d π₂ := by
   simpa using cost_combo (d := d) π₁ π₂ 1 1
 
-/-- Measures with nonnegative entries and zero mass vanish. -/
 lemma eq_zero_of_sum_eq_zero {μ : V → ℝ} (hμ : ∀ x, 0 ≤ μ x) (h : ∑ x, μ x = 0) (x : V) :
     μ x = 0 :=
   (Finset.sum_eq_zero_iff_of_nonneg (fun x _ => hμ x)).1 h x (Finset.mem_univ x)
 
-/-- Product coupling of two pieces of equal mass `M`, with a cost bound by the
-largest distance between their supports. Works also for `M = 0`. -/
 theorem exists_piece_coupling {μ ν : V → ℝ} (hμ : ∀ x, 0 ≤ μ x) (hν : ∀ y, 0 ≤ ν y)
     {M D : ℝ} (hμM : ∑ x, μ x = M) (hνM : ∑ y, ν y = M) (_hD : 0 ≤ D)
     (hdist : ∀ x y, 0 < μ x → 0 < ν y → d x y ≤ D) :
     ∃ π, IsCoupling μ ν π ∧ cost d π ≤ D * M := by
   rcases (show 0 ≤ M from hμM ▸ Finset.sum_nonneg fun x _ => hμ x).eq_or_lt with hM | hM
-  · -- zero mass: the zero plan
+  ·
     subst hM
     refine ⟨fun _ _ => 0, ⟨fun _ _ => le_rfl, fun x => ?_, fun y => ?_⟩, ?_⟩
     · simp [eq_zero_of_sum_eq_zero hμ hμM x]
@@ -134,7 +118,6 @@ theorem exists_piece_coupling {μ ν : V → ℝ} (hμ : ∀ x, 0 ≤ μ x) (hν
             ring
         _ = D * M := by rw [hμM, hνM]; field_simp
 
-/-- Identity (diagonal) coupling of `κ` with itself: zero cost when `d x x = 0`. -/
 lemma isCoupling_diag {κ : V → ℝ} (hκ : ∀ x, 0 ≤ κ x) :
     IsCoupling κ κ (fun x y => if x = y then κ x else 0) := by
   refine ⟨fun x y => ?_, fun x => ?_, fun y => ?_⟩
@@ -156,13 +139,10 @@ lemma cost_diag {κ : V → ℝ} (hself : ∀ x, d x x = 0) :
 
 end build
 
-/-! ## Diagonal entries -/
-
 section overlap
 
 variable {d : V → V → ℝ}
 
-/-- Diagonal entries of a coupling are bounded by both marginals. -/
 lemma IsCoupling.diag_le {μ ν : V → ℝ} {π : V → V → ℝ} (h : IsCoupling μ ν π) (x : V) :
     π x x ≤ min (μ x) (ν x) := by
   refine le_min ?_ ?_
@@ -172,8 +152,6 @@ lemma IsCoupling.diag_le {μ ν : V → ℝ} {π : V → V → ℝ} (h : IsCoupl
     exact Finset.single_le_sum (f := fun y => π y x) (fun y _ => h.1 y x) (Finset.mem_univ x)
 
 end overlap
-
-/-! ## Couplings of probability measures exist -/
 
 lemma exists_coupling_prob {μ ν : V → ℝ} (hμ : ∀ x, 0 ≤ μ x) (hν : ∀ y, 0 ≤ ν y)
     (hμ1 : ∑ x, μ x = 1) (hν1 : ∑ y, ν y = 1) : ∃ π, IsCoupling μ ν π := by
