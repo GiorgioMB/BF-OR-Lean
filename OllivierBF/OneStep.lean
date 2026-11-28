@@ -1,4 +1,8 @@
-/- One-step measures, OR curvature, and the residuals. -/
+/-
+  One-step measures, the OR curvature `κ_μ(i, j) = 1 − W₁(μ_i, μ_j)`, and the residual
+  `r = μ_i − μ_j`, with positive part `r₊`, negative part `r₋`, and mass `τ` (Section 3 and Lemma
+  4.1).
+-/
 module
 
 public import OllivierBF.Residual
@@ -14,22 +18,23 @@ namespace OllivierBF
 
 variable {V : Type*} [Fintype V] [DecidableEq V]
 
-/-- `μ u` is a probability measure on `N[u]`. -/
+/-- A one-step measure at `u`: `μ u` is a probability measure on `N[u]`, as for lazy, non-lazy,
+and uniform-idleness walks and walks whose weights depend on degrees. -/
 structure OneStepAt (G : SimpleGraph V) (μ : V → V → ℝ) (u : V) : Prop where
   nonneg : ∀ k, 0 ≤ μ u k
   mass : ∑ k, μ u k = 1
   supp : ∀ k, k ≠ u → ¬ G.Adj u k → μ u k = 0
 
-/-- `κ_μ(i, j) = 1 − W₁(μ_i, μ_j)`. -/
+/-- The OR curvature `κ_μ(i, j) = 1 − W₁(μ_i, μ_j)` of the edge `(i, j)` for the distance `d`. -/
 noncomputable def cORm (d : V → V → ℝ) (μ : V → V → ℝ) (i j : V) : ℝ := 1 - W1 d (μ i) (μ j)
 
-/-- `r₊ = μ_i − min(μ_i, μ_j)`. -/
+/-- `r₊ = μ_i − min(μ_i, μ_j)`, the positive part of the residual `r = μ_i − μ_j`. -/
 noncomputable def resP (μ : V → V → ℝ) (i j k : V) : ℝ := μ i k - min (μ i k) (μ j k)
 
-/-- `r₋ = μ_j − min(μ_i, μ_j)`. -/
+/-- `r₋ = μ_j − min(μ_i, μ_j)`, the negative part of `r`. -/
 noncomputable def resN (μ : V → V → ℝ) (i j k : V) : ℝ := μ j k - min (μ i k) (μ j k)
 
-/-- `τ = Σ r₊`. -/
+/-- `τ = ∑ r₊`, which equals `∑ r₋` (`resP_sum_eq_resN_sum`). -/
 noncomputable def resMass (μ : V → V → ℝ) (i j : V) : ℝ := ∑ k, resP μ i j k
 
 variable {G : SimpleGraph V} [DecidableRel G.Adj] {d : V → V → ℝ}
@@ -70,6 +75,7 @@ lemma mem_closed_of_resN_pos (hi : OneStepAt G μ i) (hj : OneStepAt G μ j) {y 
     unfold resN; rw [h0, min_eq_right (hi.nonneg y)]; ring
   linarith
 
+/-- Outside `S`, `r > 0` only on `U_i` (Lemma 4.1). -/
 lemma mem_uniq_of_resP_pos (hi : OneStepAt G μ i) (hj : OneStepAt G μ j) {x : V}
     (hx : 0 < resP μ i j x) (hxS : x ∉ overlap (G := G) i j) : x ∈ uniq G i j := by
   have hxi := mem_closed_of_resP_pos hi hj hx
@@ -79,6 +85,7 @@ lemma mem_uniq_of_resP_pos (hi : OneStepAt G μ i) (hj : OneStepAt G μ j) {x : 
   · exact absurd h hxi'
   · exact mem_uniq.2 ⟨hxj', hix, fun hjx => hC ⟨hix, hjx⟩⟩
 
+/-- Outside `S`, `r < 0` only on `U_j` (Lemma 4.1). -/
 lemma mem_uniq_of_resN_pos (hi : OneStepAt G μ i) (hj : OneStepAt G μ j) {y : V}
     (hy : 0 < resN μ i j y) (hyS : y ∉ overlap (G := G) i j) : y ∈ uniq G j i := by
   have hyj := mem_closed_of_resN_pos hi hj hy
@@ -93,6 +100,7 @@ lemma d_le_one_of (hd : GraphMetric G d) {u v : V} (h : v = u ∨ G.Adj u v) : d
   · rw [hd.self]; norm_num
   · rw [hd.adj h]
 
+/-- A vertex with `r > 0` and one with `r < 0` are within distance `3`, through `i` and `j`. -/
 theorem resid_dist_le_three (hd : GraphMetric G d) (hij : G.Adj i j)
     (hi : OneStepAt G μ i) (hj : OneStepAt G μ j) {x y : V}
     (hx : 0 < resP μ i j x) (hy : 0 < resN μ i j y) : d x y ≤ 3 := by
@@ -104,6 +112,7 @@ theorem resid_dist_le_three (hd : GraphMetric G d) (hij : G.Adj i j)
   have t2 := hd.tri i j y
   linarith
 
+/-- `κ_μ(i, j) = 1 − W₁(r₊, r₋)`. -/
 theorem cORm_eq_resid (hd : GraphMetric G d) (hi : OneStepAt G μ i) (hj : OneStepAt G μ j) :
     cORm d μ i j = 1 - W1 d (resP μ i j) (resN μ i j) := by
   unfold cORm

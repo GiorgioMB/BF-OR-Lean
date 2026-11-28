@@ -1,4 +1,11 @@
-/- Theorem 5.2. -/
+/-
+  Theorem 5.2, the attainable range, with the proof of Appendix A.1. A consistent graph is any
+  connected graph with a map, injective on the vertices of known degree, that preserves the lists
+  of `i`, `j`, `U_i`, and `C` and the degrees in them (`Consistent`). Its curvature is `κ_F` for
+  its own pairs `F`, which are admissible (`range_bounds`), and the graph of the listed edges, the
+  pairs of an admissible `F`, and pendant vertices that complete the degrees has curvature `κ_F`
+  (`realize_kappa`).
+-/
 module
 
 public import OllivierBF.TQ
@@ -16,10 +23,12 @@ universe u
 variable {V : Type u} [Fintype V] [DecidableEq V]
 variable (G : SimpleGraph V) [DecidableRel G.Adj] (i j : V)
 
-/-- The vertices whose lists are known: `i`, `j`, `U_i` and `C`. -/
+/-- The vertices whose lists are in the local data (Definition 5.1): `i`, `j`, `U_i`, and `C`,
+that is, `N[i]`. -/
 def listed : Finset V := insert i (insert j (uniq G i j ∪ common G i j))
 
-/-- The vertices whose degrees are known: `listed` and everything in its lists. -/
+/-- The vertices whose degrees are in the local data: the listed vertices and the vertices in
+their lists. -/
 def known : Finset V := listed G i j ∪ (listed G i j).biUnion (fun v => G.neighborFinset v)
 
 /-- `Z`: the vertices outside `N[i] ∪ N[j]` adjacent to `U_i`. -/
@@ -27,40 +36,48 @@ def outsideZ : Finset V :=
   ((uniq G i j).biUnion (fun v => G.neighborFinset v)).filter
     (fun z => z ≠ i ∧ z ≠ j ∧ ¬ G.Adj i z ∧ ¬ G.Adj j z)
 
-/-- The candidate pairs `{u, y}`: `y ∈ U_j` and `u ∈ (U_j ∪ Z) \ {y}`. -/
+/-- The candidate pairs `{u, y}`, with `y ∈ U_j` and `u ∈ (U_j ∪ Z) \ {y}`: never edges in the
+lists, so each may or may not be an edge of a consistent graph. -/
 def cand : Finset (Sym2 V) :=
   (((uniq G j i ∪ outsideZ G i j) ×ˢ uniq G j i).filter (fun p => p.1 ≠ p.2)).image (fun p => s(p.1, p.2))
 
-/-- The number of edges from `v` to `listed`. -/
+/-- The number of edges of `v` in the lists, that is, to listed vertices. -/
 def listedDeg (v : V) : ℕ := ((listed G i j).filter (G.Adj v)).card
 
-/-- The free degree `d̄_v`: the degree minus the listed edges. -/
+/-- The free degree `d̄_v`: the degree of `v` minus the number of its edges in the lists. -/
 def freeDeg (v : V) : ℕ := G.degree v - listedDeg G i j v
 
 /-- The number of pairs of `F` at `v`. -/
 def pairDeg (F : Finset (Sym2 V)) (v : V) : ℕ := (univ.filter (fun q => s(v, q) ∈ F)).card
 
-/-- `F` is admissible: candidate pairs, at most `d̄_v` of them at every vertex `v`. -/
+/-- `F` is admissible: a set of candidate pairs in which every vertex `v` lies in at most `d̄_v`
+pairs. -/
 def Admissible (F : Finset (Sym2 V)) : Prop :=
   F ⊆ cand G i j ∧ ∀ v, pairDeg F v ≤ freeDeg G i j v
 
+/-- The admissible sets. -/
 def admissibleSets : Finset (Finset (Sym2 V)) :=
   (cand G i j).powerset.filter (fun F => ∀ v, pairDeg F v ≤ freeDeg G i j v)
 
-/-- The distance of a pair `(x, y) ∈ U_i × U_j` for the pairs `F`. -/
+/-- The distance of `(x, y) ∈ U_i × U_j` given the pairs `F`: `1` on a cross edge, `2` if `x` and
+`y` have a common neighbor in `C ∪ U_i` or `x` has a neighbor `u` with `{u, y} ∈ F`, and `3`
+otherwise. -/
 def crossDist (F : Finset (Sym2 V)) (x y : V) : ℝ :=
   if G.Adj x y then 1
   else if (∃ w ∈ uniq G i j ∪ common G i j, G.Adj x w ∧ G.Adj w y) ∨ (∃ w, G.Adj x w ∧ s(w, y) ∈ F)
   then 2 else 3
 
-/-- The distance of Theorem 5.2: `crossDist` on `U_i × U_j`, and `1` or `2` on the other pairs. -/
+/-- The distance of Theorem 5.2: `0` on the diagonal, `crossDist F` on `U_i × U_j` in either
+order, and on the other pairs the distance that the local data fixes, `1` on edges and `2`
+otherwise. -/
 def chargedDist (F : Finset (Sym2 V)) (p q : V) : ℝ :=
   if p = q then 0
   else if p ∈ uniq G i j ∧ q ∈ uniq G j i then crossDist G i j F p q
   else if q ∈ uniq G i j ∧ p ∈ uniq G j i then crossDist G i j F q p
   else if G.Adj p q then 1 else 2
 
-/-- `1 − W₁(μ_i, μ_j)` with the distance `chargedDist F`. -/
+/-- `κ_F = 1 − W₁(μ_i, μ_j)` with the distance `chargedDist F`. By Theorem 5.2 it equals
+`1 − 3τ + σ*_F`, and `κ_∅` is the lower end `κ̲*`. -/
 noncomputable def kappaF (μ : V → V → ℝ) (F : Finset (Sym2 V)) : ℝ := cORm (chargedDist G i j F) μ i j
 
 lemma empty_mem_admissibleSets : (∅ : Finset (Sym2 V)) ∈ admissibleSets G i j := by
@@ -70,22 +87,26 @@ lemma empty_mem_admissibleSets : (∅ : Finset (Sym2 V)) ∈ admissibleSets G i 
   unfold pairDeg
   simp
 
-/-- The upper end `κ̄*`: the largest `kappaF F` over admissible `F`. -/
+/-- The upper end `κ̄*`: the largest `κ_F` over the admissible `F`. -/
 noncomputable def kappaMax (μ : V → V → ℝ) : ℝ :=
   (admissibleSets G i j).sup' ⟨∅, empty_mem_admissibleSets G i j⟩ (kappaF G i j μ)
 
-/-- `G'` is consistent with the local data of `(i, j)` in `G` through `e`. -/
+/-- `G'` is consistent with the local data of `(i, j)` in `G` through `e` (Definition 5.1): `e`
+is injective on the known vertices and carries the lists of the listed vertices and the degrees
+of the known ones. -/
 structure Consistent {V' : Type u} [Fintype V'] [DecidableEq V'] (G' : SimpleGraph V')
     [DecidableRel G'.Adj] (e : V → V') : Prop where
   inj : Set.InjOn e (known G i j)
   lists : ∀ v ∈ listed G i j, ∀ w', G'.Adj (e v) w' ↔ ∃ w, G.Adj v w ∧ e w = w'
   degrees : ∀ w ∈ known G i j, G'.degree (e w) = G.degree w
 
-/-- The measures `μ'` of `G'` at `e i` and `e j` are those of `G` at `i` and `j`, carried by `e`. -/
+/-- Locality (Definition 5.1): the measures of `G'` at `e i` and `e j` are those of `G` at `i`
+and `j`, carried by `e`. -/
 def Agrees (μ : V → V → ℝ) {V' : Type u} (μ' : V' → V' → ℝ) (e : V → V') : Prop :=
   ∀ v, (v = i ∨ v = j) →
     (∀ k ∈ known G i j, μ' (e v) (e k) = μ v k) ∧ (∀ x', (∀ k ∈ known G i j, e k ≠ x') → μ' (e v) x' = 0)
 
+/-- The candidate pairs that are edges of `G'` through `e` (the set `F_{G'}` of Appendix A.1). -/
 def pairsOf {V' : Type u} (G' : SimpleGraph V') [DecidableRel G'.Adj] (e : V → V') : Finset (Sym2 V) :=
   (cand G i j).filter (fun z => Sym2.lift ⟨fun a b => decide (G'.Adj (e a) (e b)),
     fun a b => decide_eq_decide.mpr (G'.adj_comm (e a) (e b))⟩ z = true)
@@ -297,6 +318,8 @@ lemma Consistent.common_nbr (hc : Consistent G i j G' e) {x y : V} (hx : x ∈ u
       exact ⟨e w, (hc.adj_iff hxL (listed_known hwl)).mpr hxw, (hc.adj_iff hwl hyK).mpr hwy⟩
     · exact ⟨e w, (hc.adj_iff hxL (nbr_known hxL hxw)).mpr hxw, (mem_pairsOf.mp hm).2⟩
 
+/-- On `N[i] × N[j]`, a three-apart graph metric of a consistent graph is the charged distance of
+its own pairs. -/
 theorem Consistent.dist_eq (hij : G.Adj i j) (hc : Consistent G i j G' e) {d' : V' → V' → ℝ}
     (hd : GraphMetric G' d') (h3 : ThreeApart G' d') {p q : V} (hp : p = i ∨ G.Adj i p)
     (hq : q = j ∨ G.Adj j q) : d' (e p) (e q) = chargedDist G i j (pairsOf G i j G' e) p q := by
@@ -389,6 +412,7 @@ theorem Consistent.dist_eq (hij : G.Adj i j) (hc : Consistent G i j G' e) {d' : 
       · exact hd.le_two ((hc.adj_iff' i_listed hpK).mpr hip.symm)
           ((hc.adj_iff i_listed hqK).mpr hqi.symm)
 
+/-- The pairs of a consistent graph are admissible. -/
 theorem Consistent.admissible (hc : Consistent G i j G' e) : Admissible G i j (pairsOf G i j G' e) := by
   refine ⟨pairsOf_subset, fun v => ?_⟩
   unfold pairDeg freeDeg listedDeg
@@ -434,6 +458,8 @@ section transfer
 
 variable {V' : Type u} [Fintype V'] [DecidableEq V']
 
+/-- `W₁` is unchanged when measures supported on `K`, and the costs between their supports, are
+carried by a map injective on `K`. -/
 theorem W1_transfer (e : V → V') (K : Finset V) (he : Set.InjOn e K) {α β : V → ℝ}
     {α' β' : V' → ℝ} (hα : ∀ x, 0 ≤ α x) (hβ : ∀ x, 0 ≤ β x) (hα1 : ∑ x, α x = 1)
     (hβ1 : ∑ x, β x = 1) (hαK : ∀ x, x ∉ K → α x = 0) (hβK : ∀ x, x ∉ K → β x = 0)
@@ -604,6 +630,8 @@ theorem W1_transfer (e : V → V') (K : Finset V) (he : Set.InjOn e K) {α β : 
 
 end transfer
 
+/-- A consistent graph, with a three-apart graph metric and agreeing measures, has curvature
+`κ_F` for its own pairs `F`, hence between `κ̲*` and `κ̄*`. -/
 theorem range_bounds {μ : V → V → ℝ} (hij : G.Adj i j) (hi : OneStepAt G μ i) (hj : OneStepAt G μ j)
     {V' : Type u} [Fintype V'] [DecidableEq V'] {G' : SimpleGraph V'} [DecidableRel G'.Adj]
     {e : V → V'} {d' : V' → V' → ℝ} {μ' : V' → V' → ℝ} (hc : Consistent G i j G' e)
@@ -637,6 +665,8 @@ theorem range_bounds {μ : V → V → ℝ} (hij : G.Adj i j) (hi : OneStepAt G 
 
 variable (G i j)
 
+/-- The number of pendant vertices attached to `v`: what the pairs of `F` leave of its free
+degree, and none for listed vertices. -/
 def pad (F : Finset (Sym2 V)) (v : {v // v ∈ known G i j}) : ℕ :=
   if v.1 ∈ listed G i j then 0 else freeDeg G i j v.1 - pairDeg F v.1
 
@@ -644,12 +674,15 @@ def pad (F : Finset (Sym2 V)) (v : {v // v ∈ known G i j}) : ℕ :=
 abbrev RealV (F : Finset (Sym2 V)) : Type u :=
   {v // v ∈ known G i j} ⊕ (Σ v : {v // v ∈ known G i j}, Fin (pad G i j F v))
 
+/-- The adjacency of `realize F`: the edges in the lists, the pairs of `F`, and the pendant
+edges. -/
 def realRel (F : Finset (Sym2 V)) : RealV G i j F → RealV G i j F → Prop
   | Sum.inl a, Sum.inl b => (G.Adj a.1 b.1 ∧ (a.1 ∈ listed G i j ∨ b.1 ∈ listed G i j)) ∨ s(a.1, b.1) ∈ F
   | Sum.inl a, Sum.inr b => a = b.1
   | Sum.inr _, _ => False
 
-/-- The graph that realizes the pairs `F`. -/
+/-- The realization of `F` (Appendix A.1): the edges in the lists, the pairs of `F`, and pendant
+vertices that complete the degrees. -/
 def realize (F : Finset (Sym2 V)) : SimpleGraph (RealV G i j F) := SimpleGraph.fromRel (realRel G i j F)
 
 noncomputable instance (F : Finset (Sym2 V)) : DecidableRel (realize G i j F).Adj := Classical.decRel _
@@ -688,6 +721,7 @@ lemma realize_adj_inl_inr {F : Finset (Sym2 V)} {a : {v // v ∈ known G i j}}
     (realize G i j F).Adj (Sum.inl a) (Sum.inr b) ↔ a = b.1 := by
   simp [realize, SimpleGraph.fromRel_adj, realRel]
 
+/-- For admissible `F`, `realize F` is consistent with the local data. -/
 theorem realize_consistent {F : Finset (Sym2 V)} (hF : Admissible G i j F) :
     Consistent G i j (realize G i j F) (embed G i j F) where
   inj := by
@@ -800,6 +834,7 @@ theorem realize_consistent {F : Finset (Sym2 V)} (hF : Admissible G i j F) :
       simp only [freeDeg, pairDeg, listedDeg] at hadm hlist ⊢
       omega
 
+/-- For admissible `F`, `realize F` is connected. -/
 theorem realize_connected (hij : G.Adj i j) {F : Finset (Sym2 V)} (hF : Admissible G i j F) :
     (realize G i j F).Connected := by
   have hc := realize_consistent hF
@@ -830,6 +865,7 @@ theorem realize_connected (hij : G.Adj i j) {F : Finset (Sym2 V)} (hF : Admissib
   have : Nonempty (RealV G i j F) := ⟨r⟩
   exact ⟨fun x y => (hall x).trans (hall y).symm⟩
 
+/-- The pairs of `realize F` are exactly `F`. -/
 theorem pairsOf_realize {F : Finset (Sym2 V)} (hF : Admissible G i j F) :
     pairsOf G i j (realize G i j F) (embed G i j F) = F := by
   ext z
@@ -848,6 +884,7 @@ theorem pairsOf_realize {F : Finset (Sym2 V)} (hF : Admissible G i j F) :
     rw [embed_of_known hv.1, embed_of_known hv.2.2.1, realize_adj_inl]
     exact ⟨hv.2.2.2.2, Or.inr hm⟩
 
+/-- With its shortest-path distance and agreeing measures, `realize F` has curvature `κ_F`. -/
 theorem realize_kappa {μ : V → V → ℝ} (hij : G.Adj i j) (hi : OneStepAt G μ i) (hj : OneStepAt G μ j)
     {F : Finset (Sym2 V)} (hF : Admissible G i j F) {μ' : RealV G i j F → RealV G i j F → ℝ}
     (hμ : Agrees G i j μ μ' (embed G i j F)) :
@@ -962,6 +999,8 @@ lemma crossDist_eq_three {F : Finset (Sym2 V)} {x y : V} (h1 : ¬ G.Adj x y)
   unfold crossDist
   rw [ite_eq_right h1, ite_eq_right (not_or.mpr ⟨h2, h3⟩)]
 
+/-- The triangle inequality for `chargedDist F` through the vertices of `S`, which is all that
+the residual reduction needs. -/
 lemma chargedDist_tri_overlap (F : Finset (Sym2 V)) {x z w : V} (hx : x = i ∨ G.Adj i x)
     (hz : z ∈ overlap G i j) :
     chargedDist G i j F x w ≤ chargedDist G i j F x z + chargedDist G i j F z w := by
@@ -1013,6 +1052,7 @@ lemma chargedDist_tri_overlap (F : Finset (Sym2 V)) {x z w : V} (hx : x = i ∨ 
   · norm_num
   · norm_num
 
+/-- With the charged distance too, `W₁(μ_i, μ_j) = W₁(r₊, r₋)`. -/
 theorem W1_chargedDist_eq_resid (hi : OneStepAt G μ i) (hj : OneStepAt G μ j)
     (F : Finset (Sym2 V)) :
     W1 (chargedDist G i j F) (μ i) (μ j) = W1 (chargedDist G i j F) (resP μ i j) (resN μ i j) := by
@@ -1021,6 +1061,7 @@ theorem W1_chargedDist_eq_resid (hi : OneStepAt G μ i) (hj : OneStepAt G μ j)
       (mem_closed_of_mu_pos hi hx) (mem_overlap_of_min_pos hi hj hz)]
   rfl
 
+/-- `κ_F − (1 − 3τ)` is the least upper bound of the savings with the distance `chargedDist F`. -/
 lemma kappaF_isLUB (hi : OneStepAt G μ i) (hj : OneStepAt G μ j) (F : Finset (Sym2 V)) :
     IsLUB (savings (chargedDist G i j F) '' {π | IsSubPlan (resP μ i j) (resN μ i j) π})
       (kappaF G i j μ F - (1 - 3 * resMass μ i j)) := by
@@ -1035,10 +1076,11 @@ lemma kappaF_isLUB (hi : OneStepAt G μ i) (hj : OneStepAt G μ j) (F : Finset (
 
 end
 
-/-- **Theorem 5.2.** `kappaF F − (1 − 3τ)` is the maximum `σ*_F` of the savings with the
-distance `chargedDist F`. Over the connected graphs consistent with the local data, with their
-shortest-path distance and measures that agree with `μ`, the curvature lies between `kappaF ∅`
-and `kappaMax`, and both are attained. -/
+/-- **Theorem 5.2.** For every `F`, `κ_F − (1 − 3τ)` is the maximum `σ*_F` of the savings with
+the distance `chargedDist F`. Over the connected graphs consistent with the local data of
+`(i, j)`, with their shortest-path distance and measures that agree with `μ`, the curvature lies
+between the lower end `κ̲* = κ_∅` and the upper end `κ̄* = kappaMax`, and the realizations of `∅`
+and of a maximizing admissible `F` attain them. -/
 theorem attainable_range_paper {μ : V → V → ℝ} (hij : G.Adj i j) (hi : OneStepAt G μ i)
     (hj : OneStepAt G μ j) :
     (∀ F : Finset (Sym2 V),

@@ -1,4 +1,9 @@
-/- `W₁` depends only on the residuals; savings of partial plans. -/
+/-
+  `W₁` depends only on the residuals, and the savings of partial plans (Section 4).
+  `W1_eq_W1_resid` is the finite form of Villani's Corollary 1.16, proved by splicing out, vertex
+  by vertex, the mass that both measures put there; `isLUB_savings` and `exists_max_subPlan` make
+  the `σ*` of Proposition 4.2 a maximum.
+-/
 module
 
 public import OllivierBF.Transport
@@ -13,12 +18,15 @@ namespace OllivierBF
 
 variable {V : Type*} [Fintype V] [DecidableEq V]
 
+/-- The mass `∑ π(x, y)` that `π` moves. -/
 def mass (π : V → V → ℝ) : ℝ := ∑ x, ∑ y, π x y
 
-/-- The savings `Σ (3 − d) π`. -/
+/-- The savings `∑ (3 − d(p, q)) π(p, q)` of `π` (Proposition 4.2): for a graph metric, a unit
+saves `2` along an edge and `1` along a path of length `2`. -/
 def savings (d : V → V → ℝ) (π : V → V → ℝ) : ℝ := ∑ x, ∑ y, (3 - d x y) * π x y
 
-/-- A partial plan: nonnegative, with row sums at most `μ` and column sums at most `ν`. -/
+/-- A plan feasible in Proposition 4.2: nonnegative, with row sums at most `μ` and column sums at
+most `ν`. -/
 def IsSubPlan (μ ν : V → ℝ) (π : V → V → ℝ) : Prop :=
   (∀ x y, 0 ≤ π x y) ∧ (∀ x, ∑ y, π x y ≤ μ x) ∧ (∀ y, ∑ x, π x y ≤ ν y)
 
@@ -227,6 +235,8 @@ lemma splice_core {α β : V → ℝ} {π : V → V → ℝ} (hπ : IsCoupling �
       ring
     linarith
 
+/-- Splicing at `z`: for `c ≤ min{α(z), β(z)}`, a coupling of `α` and `β` gives one of
+`α − c δ_z` and `β − c δ_z` of no larger cost, by the triangle inequality through `z`. -/
 theorem splice_vertex {α β : V → ℝ} {π : V → V → ℝ} (hπ : IsCoupling α β π)
     (hself : ∀ x, d x x = 0) (z : V) {c : ℝ}
     (htri : 0 < c → ∀ u w, 0 < α u → 0 < β w → d u w ≤ d u z + d z w)
@@ -265,6 +275,8 @@ theorem splice_vertex {α β : V → ℝ} {π : V → V → ℝ} (hπ : IsCoupli
           = β y - if y = z then c else 0
       split_ifs <;> ring
 
+/-- Splicing at every vertex: a coupling of `μ` and `ν` gives a coupling of their residuals of no
+larger cost. -/
 theorem exists_resid_coupling_le {μ ν : V → ℝ} {π : V → V → ℝ} (hπ : IsCoupling μ ν π)
     (hμ : ∀ x, 0 ≤ μ x) (hν : ∀ x, 0 ≤ ν x) (hself : ∀ x, d x x = 0)
     (hT : ∀ x z w, 0 < μ x → 0 < min (μ z) (ν z) → 0 < ν w → d x w ≤ d x z + d z w) :
@@ -326,8 +338,9 @@ lemma exists_resid_coupling {μ ν : V → ℝ}
     (fun _ _ _ _ => le_rfl)
   exact ⟨ρ, hρ⟩
 
-/-- `W₁` depends only on the residuals (Villani, Corollary 1.16). The triangle inequality is
-needed only through the vertices where both measures are positive. -/
+/-- `W₁(μ, ν) = W₁(μ − μ ∧ ν, ν − μ ∧ ν)`: `W₁` depends only on the residuals, the finite form of
+Villani's Corollary 1.16. The triangle inequality is needed only through the vertices where both
+measures are positive. -/
 theorem W1_eq_W1_resid {μ ν : V → ℝ} (hμ : ∀ x, 0 ≤ μ x) (hν : ∀ x, 0 ≤ ν x)
     (hmass : ∑ x, μ x = ∑ x, ν x) (hd0 : ∀ x y, 0 ≤ d x y) (hself : ∀ x, d x x = 0)
     (hT : ∀ x z w, 0 < μ x → 0 < min (μ z) (ν z) → 0 < ν w → d x w ≤ d x z + d z w) :
@@ -350,6 +363,8 @@ theorem W1_eq_W1_resid {μ ν : V → ℝ} (hμ : ∀ x, 0 ≤ μ x) (hν : ∀ 
     obtain ⟨ρ, hρ, hcost⟩ := exists_resid_coupling_le (d := d) hπ hμ hν hself hT
     exact (W1_le_cost hd0 hρ).trans hcost
 
+/-- A partial plan extends to a coupling without losing savings, since every remaining unit
+travels at most `3`. -/
 theorem exists_extension {μ ν : V → ℝ} {π : V → V → ℝ} (hπ : IsSubPlan μ ν π)
     (hmass : ∑ x, μ x = ∑ y, ν y) (h3 : ∀ x y, 0 < μ x → 0 < ν y → d x y ≤ 3) :
     ∃ ρ, IsCoupling μ ν ρ ∧ savings d π ≤ savings d ρ := by
@@ -388,6 +403,8 @@ theorem exists_extension {μ ν : V → ℝ} {π : V → V → ℝ} (hπ : IsSub
     rw [hs]
     linarith
 
+/-- When every pair of the supports is within distance `3`, the savings of the partial plans have
+least upper bound `3 ∑ α − W₁(α, β)`. -/
 theorem isLUB_savings {c : V → V → ℝ} {α β : V → ℝ} (hmass : ∑ x, α x = ∑ y, β y)
     (hc : ∀ x y, 0 ≤ c x y) (h3 : ∀ x y, 0 < α x → 0 < β y → c x y ≤ 3)
     (hne : ∃ ρ, IsCoupling α β ρ) :
@@ -441,6 +458,8 @@ lemma isClosed_subPlan : IsClosed {π : V → V → ℝ | IsSubPlan α β π} :=
     ((isClosed_iInter fun x => isClosed_le (by fun_prop) continuous_const).inter
       (isClosed_iInter fun y => isClosed_le (by fun_prop) continuous_const))
 
+/-- A continuous function attains its maximum over the partial plans that satisfy a closed
+condition holding for the zero plan (compactness). -/
 theorem exists_max_subPlan (hα : ∀ x, 0 ≤ α x) (hβ : ∀ y, 0 ≤ β y)
     (P : (V → V → ℝ) → Prop) (hP : IsClosed {π | P π}) (hP0 : P fun _ _ => 0)
     (f : (V → V → ℝ) → ℝ) (hf : Continuous f) :

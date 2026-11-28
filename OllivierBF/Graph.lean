@@ -1,4 +1,7 @@
-/- Graph metrics and the neighbourhoods of an edge. -/
+/-
+  The distances for which the results hold (`GraphMetric`, Appendix C) and the neighborhoods of an
+  edge `(i, j)` (Section 3): `C`, `U_i`, `U_j`, and `S`.
+-/
 module
 
 public import OllivierBF.Transport
@@ -14,8 +17,10 @@ namespace OllivierBF
 variable {V : Type*} [Fintype V] [DecidableEq V]
 variable (G : SimpleGraph V) [DecidableRel G.Adj]
 
-/-- The properties of the distance that the results use; the shortest-path distance of a
-connected graph has them (`graphMetric_dist`). -/
+/-- The properties of the distance that the results use: `0` on the diagonal, `1` on edges, at
+least `1` between distinct vertices and at least `2` between distinct non-adjacent ones, the
+triangle inequality, and symmetry. The shortest-path distance of a connected graph has them
+(`graphMetric_dist`). -/
 structure GraphMetric (d : V → V → ℝ) : Prop where
   self : ∀ x, d x x = 0
   adj : ∀ {x y}, G.Adj x y → d x y = 1
@@ -41,6 +46,7 @@ lemma GraphMetric.le_three {d : V → V → ℝ} (hd : GraphMetric G d) {x a b y
   have h' := hd.le_two h₂ h₃
   rw [hd.adj h₁] at h; linarith
 
+/-- The shortest-path distance of a connected graph is a `GraphMetric`. -/
 lemma graphMetric_dist (hG : G.Connected) : GraphMetric G (fun x y => (G.dist x y : ℝ)) where
   self x := by simp
   adj h := by simp [SimpleGraph.dist_eq_one_iff_adj.mpr h]
@@ -57,13 +63,16 @@ lemma graphMetric_dist (hG : G.Connected) : GraphMetric G (fun x y => (G.dist x 
 
 variable (G)
 
-/-- `C = N(i) ∩ N(j)`. -/
+/-- `C = N(i) ∩ N(j)`, the common neighbors of `i` and `j`; `t = |C|` counts the triangles on
+`(i, j)`. -/
 def common (i j : V) : Finset V := G.neighborFinset i ∩ G.neighborFinset j
 
-/-- `U_u = N(u) \ N(v) \ {v}` for the edge `(u, v)`. -/
+/-- `U_u = N(u) \ N[v]` for the edge `(u, v)`: the neighbors of `u` other than `v` that are not
+adjacent to `v`. -/
 def uniq (u v : V) : Finset V := (G.neighborFinset u \ G.neighborFinset v).erase v
 
-/-- `S = {i, j} ∪ C`. -/
+/-- `S = {i, j} ∪ C`, which is `N[i] ∩ N[j]` for an edge: the vertices where both measures may
+have mass. -/
 def overlap (i j : V) : Finset V := insert i (insert j (common G i j))
 
 variable {G}

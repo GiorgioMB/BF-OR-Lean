@@ -1,4 +1,7 @@
-/- Couplings and `W₁`. -/
+/-
+  Couplings, the transport cost, and `W₁` (Section 3). `W₁` is the infimum of the cost over the
+  couplings, so an explicit coupling bounds it from above; no duality is used.
+-/
 module
 
 public import Mathlib
@@ -13,14 +16,14 @@ namespace OllivierBF
 
 variable {V : Type*} [Fintype V] [DecidableEq V]
 
-/-- `π` couples `μ` and `ν`. -/
+/-- `π` is a coupling of `μ` and `ν`: nonnegative, with row sums `μ` and column sums `ν`. -/
 def IsCoupling (μ ν : V → ℝ) (π : V → V → ℝ) : Prop :=
   (∀ x y, 0 ≤ π x y) ∧ (∀ x, ∑ y, π x y = μ x) ∧ (∀ y, ∑ x, π x y = ν y)
 
-/-- The transport cost. -/
+/-- The transport cost `∑ d(x, y) π(x, y)` of `π`. -/
 def cost (d : V → V → ℝ) (π : V → V → ℝ) : ℝ := ∑ x, ∑ y, d x y * π x y
 
-/-- `W₁`, the infimum of the costs of the couplings. -/
+/-- `W₁(μ, ν)`: the infimum of the cost over the couplings of `μ` and `ν`. -/
 noncomputable def W1 (d : V → V → ℝ) (μ ν : V → ℝ) : ℝ :=
   sInf (cost d '' {π | IsCoupling μ ν π})
 
@@ -35,9 +38,11 @@ lemma bddBelow_costs (hd : ∀ x y, 0 ≤ d x y) :
     BddBelow (cost d '' {π | IsCoupling μ ν π}) :=
   ⟨0, by rintro _ ⟨π, hπ, rfl⟩; exact cost_nonneg hd hπ.1⟩
 
+/-- `W₁` is at most the cost of any coupling. -/
 theorem W1_le_cost (hd : ∀ x y, 0 ≤ d x y) (hπ : IsCoupling μ ν π) : W1 d μ ν ≤ cost d π :=
   csInf_le (bddBelow_costs hd) ⟨π, hπ, rfl⟩
 
+/-- A lower bound on the cost of every coupling is a lower bound on `W₁`. -/
 theorem le_W1 {b : ℝ} (hne : ∃ π, IsCoupling μ ν π)
     (h : ∀ π, IsCoupling μ ν π → b ≤ cost d π) : b ≤ W1 d μ ν := by
   obtain ⟨π₀, h₀⟩ := hne
@@ -81,6 +86,8 @@ lemma eq_zero_of_sum_eq_zero {μ : V → ℝ} (hμ : ∀ x, 0 ≤ μ x) (h : ∑
     μ x = 0 :=
   (Finset.sum_eq_zero_iff_of_nonneg (fun x _ => hμ x)).1 h x (Finset.mem_univ x)
 
+/-- Measures of equal mass `M` whose supports are within distance `D` of each other have a
+coupling of cost at most `D · M`. -/
 theorem exists_piece_coupling {μ ν : V → ℝ} (hμ : ∀ x, 0 ≤ μ x) (hν : ∀ y, 0 ≤ ν y)
     {M D : ℝ} (hμM : ∑ x, μ x = M) (hνM : ∑ y, ν y = M) (_hD : 0 ≤ D)
     (hdist : ∀ x y, 0 < μ x → 0 < ν y → d x y ≤ D) :

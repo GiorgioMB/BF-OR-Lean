@@ -1,4 +1,7 @@
-/- The counting behind Theorem 5.3. -/
+/-
+  The counting behind Theorem 5.3 (Appendix A.2): the mass that a coupling moves along edges, the
+  pairs that must be at distance `3`, and the bound on the edge mass by blocks.
+-/
 module
 
 public import OllivierBF.OneStep
@@ -13,19 +16,20 @@ namespace OllivierBF
 
 variable {V : Type*} [Fintype V] [DecidableEq V]
 
-/-- The mass that a plan moves along edges. -/
+/-- The mass that `π` moves along edges of `G`. -/
 noncomputable def adjMass (G : SimpleGraph V) [DecidableRel G.Adj] (π : V → V → ℝ) : ℝ :=
   ∑ x, ∑ y, if G.Adj x y then π x y else 0
 
-/-- Distinct non-adjacent vertices without a common neighbour are at distance at least `3`. -/
+/-- Distinct non-adjacent vertices without a common neighbor are at distance at least `3`, as for
+the shortest-path distance (`threeApart_dist`). -/
 def ThreeApart (G : SimpleGraph V) (d : V → V → ℝ) : Prop :=
   ∀ x y, x ≠ y → ¬ G.Adj x y → (∀ w, ¬ (G.Adj x w ∧ G.Adj w y)) → 3 ≤ d x y
 
-/-- Capped supply: the smaller of `r₊(x)` and the demand on the neighbours of `x`. -/
+/-- The capped supply of `x`: the smaller of `r₊(x)` and the demand `r₋` of its neighbors. -/
 noncomputable def capS (G : SimpleGraph V) [DecidableRel G.Adj] (μ : V → V → ℝ) (i j x : V) : ℝ :=
   min (resP μ i j x) (∑ y, if G.Adj x y then resN μ i j y else 0)
 
-/-- Capped demand: the smaller of `r₋(y)` and the supply on the neighbours of `y`. -/
+/-- The capped demand of `y`: the smaller of `r₋(y)` and the supply `r₊` of its neighbors. -/
 noncomputable def capD (G : SimpleGraph V) [DecidableRel G.Adj] (μ : V → V → ℝ) (i j y : V) : ℝ :=
   min (resN μ i j y) (∑ x, if G.Adj x y then resP μ i j x else 0)
 
@@ -39,13 +43,15 @@ noncomputable def oppNbr (G : SimpleGraph V) [DecidableRel G.Adj] (μ : V → V 
     + (if 0 < resN μ i j u then
       ∑ x, (if x ∉ ({i, j} : Finset V) ∧ G.Adj x u then resP μ i j x else 0) else 0)
 
-/-- `F_ij = min{r₊(i), r₋(j)} + min{r₊(j), r₋(i)}`. -/
+/-- `F_ij = min{r₊(i), r₋(j)} + min{r₊(j), r₋(i)}`, the most that a coupling of the residuals
+moves along `(i, j)`. -/
 noncomputable def flowIJ (μ : V → V → ℝ) (i j : V) : ℝ :=
   min (resP μ i j i) (resN μ i j j) + min (resP μ i j j) (resN μ i j i)
 
 variable {G : SimpleGraph V} [DecidableRel G.Adj] {d : V → V → ℝ}
 variable {μ : V → V → ℝ} {i j : V} {ρ : V → V → ℝ}
 
+/-- The shortest-path distance of a connected graph is `ThreeApart`. -/
 lemma threeApart_dist (hG : G.Connected) : ThreeApart G (fun x y => (G.dist x y : ℝ)) := by
   intro x y hxy hadj hcn
   obtain ⟨p, hp⟩ := (hG.preconnected x y).exists_walk_length_eq_dist
@@ -204,6 +210,9 @@ lemma sum_weight_Y (π : V → V → ℝ) (Y S : Finset V) :
   refine Finset.sum_congr rfl fun y _ => ?_
   split_ifs <;> ring
 
+/-- A coupling of the residuals that moves at most `η` along edges costs at least `2τ − η + D₃`,
+for a cost that is `1` on edges, at least `2` on distinct non-adjacent pairs, and at least `3`
+from `X` to the demand outside `S` and from the supply outside `S` to `Y`. -/
 lemma cost_ge_of_far {c : V → V → ℝ} (hc1 : ∀ {x y}, G.Adj x y → c x y = 1)
     (hc2 : ∀ {x y}, x ≠ y → ¬ G.Adj x y → 2 ≤ c x y) {X Y : Finset V}
     (hX : ∀ x ∈ X, ∀ y, 0 < resN μ i j y → y ∉ overlap (G := G) i j → 3 ≤ c x y)
@@ -244,6 +253,9 @@ lemma cost_ge_of_far {c : V → V → ℝ} (hc1 : ∀ {x y}, G.Adj x y → c x y
     max_le (by linarith) (max_le (by linarith) (by linarith))
   linarith
 
+/-- Theorem 5.3 (ii) with the distance-`3` conditions stated directly:
+`κ_μ(i, j) ≤ 1 − 2τ + η − D₃` for every `η` that bounds the edge mass of the couplings of the
+residuals. -/
 theorem tq_upper (hd : GraphMetric G d) (hi : OneStepAt G μ i) (hj : OneStepAt G μ j)
     {η : ℝ} (hη : ∀ ρ, IsCoupling (resP μ i j) (resN μ i j) ρ → adjMass G ρ ≤ η)
     {X Y : Finset V}
@@ -293,6 +305,8 @@ lemma col_adj_le_capD (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (y : V) 
         _ = resP μ i j x := hρ.2.1 x
     · exact le_rfl
 
+/-- On the edges avoiding `I`, a coupling of the residuals moves at most the sum over the blocks
+of the smaller of their capped supply and capped demand. -/
 lemma outside_le_blocks {β : Type*} [DecidableEq β]
     (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (I : Finset V) (b : V → β)
     (hb : ∀ x y, 0 < resP μ i j x → 0 < resN μ i j y → G.Adj x y → x ∉ I → y ∉ I → b x = b y) :
@@ -514,6 +528,8 @@ lemma ite_at_ij (hij : i ≠ j) (g : V → V → ℝ) (x y : V) :
   by_cases hxi : x = i <;> by_cases hxj : x = j <;> by_cases hyi : y = i <;> by_cases hyj : y = j <;>
     by_cases hadj : G.Adj x y <;> simp_all [Finset.mem_insert, Finset.mem_singleton]
 
+/-- A vertex of `U_i` without cross edges, whose neighbors are `i` or have no neighbor in `U_j`,
+is at distance at least `3` from `U_j`. -/
 theorem far_of_closedX (h3 : ThreeApart G d) {x : V} (hx : x ∈ uniq G i j)
     (hnc : ∀ y ∈ uniq G j i, ¬ G.Adj x y)
     (hnb : ∀ w, G.Adj x w → w = i ∨ ∀ y ∈ uniq G j i, ¬ G.Adj w y)
@@ -528,6 +544,8 @@ theorem far_of_closedX (h3 : ThreeApart G d) {x : V} (hx : x ∈ uniq G i j)
     · exact (mem_uniq.1 hy).2.2 hwy
     · exact hw y hy hwy
 
+/-- A vertex of `U_j` without cross edges, whose neighbors are `j` or have no neighbor in `U_i`,
+is at distance at least `3` from `U_i`. -/
 theorem far_of_closedY (h3 : ThreeApart G d) {y : V} (hy : y ∈ uniq G j i)
     (hnc : ∀ x ∈ uniq G i j, ¬ G.Adj x y)
     (hnb : ∀ w, G.Adj y w → w = j ∨ ∀ x ∈ uniq G i j, ¬ G.Adj w x)
@@ -542,6 +560,7 @@ theorem far_of_closedY (h3 : ThreeApart G d) {y : V} (hy : y ∈ uniq G j i)
     · exact (mem_uniq.1 hx).2.2 hxw.symm
     · exact hw x hx hxw.symm
 
+/-- If `y` is adjacent to `j` and `d_y = 1 + |N(y) ∩ C|`, every neighbor of `y` is `j` or in `C`. -/
 lemma nbr_of_degree_eq {y : V} (hyj : G.Adj j y)
     (hdeg : G.degree y = 1 + (G.neighborFinset y ∩ common G i j).card) :
     ∀ w, G.Adj y w → w = j ∨ w ∈ common G i j := by

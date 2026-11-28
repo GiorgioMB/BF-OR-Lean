@@ -1,4 +1,7 @@
-/- Proposition 4.2 and Theorem 5.3 as the paper states them. -/
+/-
+  Proposition 4.2 and Theorem 5.3 as the paper states them, with the proofs of Appendix A.2. Both
+  hold for every one-step measure and every graph metric, three-apart in Theorem 5.3 (ii).
+-/
 module
 
 public import OllivierBF.AttainableRange
@@ -13,29 +16,33 @@ namespace OllivierBF
 
 variable {V : Type*} [Fintype V] [DecidableEq V]
 
-/-- `X₃`: the vertices of `U_i` without cross edges whose neighbours are all `i`, vertices of
-`C` without neighbours in `U_j`, or vertices of `U_i` without cross edges. -/
+/-- `X ⊆ X₃`, where `X₃` is the set of vertices of `U_i` without cross edges whose neighbors are
+all `i`, vertices of `C` without neighbors in `U_j`, or vertices of `U_i` without cross edges
+(Theorem 5.3 (ii)). They are at distance `3` from `U_j` in every consistent graph. -/
 def IsFarX (G : SimpleGraph V) [DecidableRel G.Adj] (i j : V) (X : Finset V) : Prop :=
   ∀ x ∈ X, x ∈ uniq G i j ∧ (∀ y ∈ uniq G j i, ¬ G.Adj x y) ∧
     ∀ w, G.Adj x w → w = i ∨ (w ∈ common G i j ∧ ∀ y ∈ uniq G j i, ¬ G.Adj w y) ∨
       (w ∈ uniq G i j ∧ ∀ y ∈ uniq G j i, ¬ G.Adj w y)
 
-/-- `Y₃`: the vertices `y` of `U_j` without cross edges, with `d_y = 1 + |N(y) ∩ C|`, and with
-no neighbour in `C` adjacent to `U_i`. -/
+/-- `Y ⊆ Y₃`, where `Y₃` is the set of vertices `y` of `U_j` without cross edges, with
+`d_y = 1 + |N(y) ∩ C|`, and with no neighbor in `C` adjacent to `U_i` (Theorem 5.3 (ii)). Their
+degree reveals all their neighbors, so they are at distance `3` from `U_i` in every consistent
+graph. -/
 def IsFarY (G : SimpleGraph V) [DecidableRel G.Adj] (i j : V) (Y : Finset V) : Prop :=
   ∀ y ∈ Y, y ∈ uniq G j i ∧ (∀ x ∈ uniq G i j, ¬ G.Adj x y) ∧
     G.degree y = 1 + (G.neighborFinset y ∩ common G i j).card ∧
     ∀ k ∈ common G i j, G.Adj y k → ∀ x ∈ uniq G i j, ¬ G.Adj k x
 
-/-- A flow along the edges of `G` with capacities `α`, `β`: a partial plan that moves mass
-only along edges. -/
+/-- A flow along single edges of `G` with capacities `α` and `β`: a partial plan that moves mass
+only between adjacent vertices. -/
 def IsEdgeFlow (G : SimpleGraph V) [DecidableRel G.Adj] (α β : V → ℝ) (f : V → V → ℝ) : Prop :=
   IsSubPlan α β f ∧ ∀ x y, ¬ G.Adj x y → f x y = 0
 
-/-- `η`: the maximum value of a flow along the edges of `G` with capacities `α`, `β`. -/
+/-- `η`: the maximum value of a flow along single edges of `G` with capacities `α` and `β`. -/
 noncomputable def maxFlow (G : SimpleGraph V) [DecidableRel G.Adj] (α β : V → ℝ) : ℝ :=
   sSup (mass '' {f | IsEdgeFlow G α β f})
 
+/-- The plans that move mass only along edges form a closed set. -/
 lemma isClosed_edgeSupported (G : SimpleGraph V) [DecidableRel G.Adj] :
     IsClosed {f : V → V → ℝ | ∀ x y, ¬ G.Adj x y → f x y = 0} := by
   have hset : {f : V → V → ℝ | ∀ x y, ¬ G.Adj x y → f x y = 0} =
@@ -59,8 +66,8 @@ lemma isClosed_edgeSupported (G : SimpleGraph V) [DecidableRel G.Adj] :
 variable {G : SimpleGraph V} [DecidableRel G.Adj] {d : V → V → ℝ}
 variable {μ : V → V → ℝ} {i j : V} {ρ : V → V → ℝ}
 
-/-- **Proposition 4.2.** `κ_μ = 1 − 3τ + σ*`: `κ_μ − (1 − 3τ)` is the maximum `σ*` of the
-savings over the partial plans of the residuals. -/
+/-- **Proposition 4.2.** `κ_μ = 1 − 3τ + σ*`: `κ_μ(i, j) − (1 − 3τ)` is the maximum `σ*` of the
+savings over the plans with row sums at most `r₊` and column sums at most `r₋`. -/
 theorem savings_paper (hd : GraphMetric G d) (hij : G.Adj i j) (hi : OneStepAt G μ i)
     (hj : OneStepAt G μ j) :
     IsGreatest (savings d '' {π | IsSubPlan (resP μ i j) (resN μ i j) π})
@@ -75,7 +82,9 @@ theorem savings_paper (hd : GraphMetric G d) (hij : G.Adj i j) (hi : OneStepAt G
   exact isLUB_savings (resP_sum_eq_resN_sum hi hj) hd.nonneg
     (fun x y hx hy => resid_dist_le_three hd hij hi hj hx hy) (exists_resid_coupling_of hi hj)
 
-/-- **Theorem 5.3 (i).** -/
+/-- **Theorem 5.3 (i).** For every feasible plan `π` and every cost `c` at least the distance on
+the support of `π`, `κ_μ(i, j) ≥ 1 − 3τ + ∑ (3 − c) π`. With `c` the distance that the local data
+certifies, this is `κ̲_TQ`. -/
 theorem tq_lower_paper (hd : GraphMetric G d) (hij : G.Adj i j)
     (hi : OneStepAt G μ i) (hj : OneStepAt G μ j) {π : V → V → ℝ}
     (hπ : IsSubPlan (resP μ i j) (resN μ i j) π) {c : V → V → ℝ}
@@ -85,6 +94,7 @@ theorem tq_lower_paper (hd : GraphMetric G d) (hij : G.Adj i j)
   have h2 := sum_le_savings_of_le hπ.1 hc
   linarith
 
+/-- `η` is attained by a flow along single edges. -/
 theorem isGreatest_maxFlow {α β : V → ℝ} (hα : ∀ x, 0 ≤ α x) (hβ : ∀ y, 0 ≤ β y) :
     IsGreatest (mass '' {f | IsEdgeFlow G α β f}) (maxFlow G α β) := by
   have hcont : Continuous (mass : (V → V → ℝ) → ℝ) := by
@@ -106,6 +116,7 @@ section flows
 
 variable {α β : V → ℝ}
 
+/-- A partial plan moves at most the mass of its row capacities. -/
 lemma IsSubPlan.mass_le {π : V → V → ℝ} (hπ : IsSubPlan α β π) : mass π ≤ ∑ x, α x := by
   unfold mass
   exact Finset.sum_le_sum fun x _ => hπ.2.1 x
@@ -196,8 +207,9 @@ lemma maxFlow_le (hα : ∀ x, 0 ≤ α x) (hβ : ∀ y, 0 ≤ β y) (hmass : �
 
 end flows
 
-/-- **Theorem 5.3 (ii).** The maximum flow `η` is attained, and the bound holds for every
-`η' ≥ η`. -/
+/-- **Theorem 5.3 (ii).** The maximum flow `η` is attained, and for every `η' ≥ η`,
+`κ_μ(i, j) ≤ κ̄_TQ = 1 − 2τ + η' − D₃`, where `D₃ = max{[r₊(X) − r₋(S)]₊, [r₋(Y) − r₊(S)]₊}` for
+`X ⊆ X₃` and `Y ⊆ Y₃`. -/
 theorem tq_upper_paper (hd : GraphMetric G d) (h3 : ThreeApart G d)
     (hi : OneStepAt G μ i) (hj : OneStepAt G μ j)
     {X Y : Finset V} (hX : IsFarX G i j X) (hY : IsFarY G i j Y) :
@@ -221,6 +233,7 @@ theorem tq_upper_paper (hd : GraphMetric G d) (h3 : ThreeApart G d)
     · exact Or.inl h
     · exact Or.inr (hCk w h hw)
 
+/-- A vertex of `X₃` is at charged distance `3` from `U_j` for every admissible `F`. -/
 lemma three_le_chargedDist_of_farX {F : Finset (Sym2 V)} (hF : Admissible G i j F)
     {X : Finset V} (hX : IsFarX G i j X) {x y : V} (hx : x ∈ X) (hy : y ∈ uniq G j i) :
     3 ≤ chargedDist G i j F x y := by
@@ -244,6 +257,7 @@ lemma three_le_chargedDist_of_farX {F : Finset (Sym2 V)} (hF : Admissible G i j 
   have hcd := chargedDist_cross (G := G) (i := i) (j := j) (F := F) hxU hy
   linarith
 
+/-- A vertex of `Y₃` has free degree `0`. -/
 lemma freeDeg_eq_zero_of_farY {Y : Finset V} (hY : IsFarY G i j Y) {y : V} (hy : y ∈ Y) :
     freeDeg G i j y = 0 := by
   obtain ⟨hyU, hnc, hdeg, -⟩ := hY y hy
@@ -270,6 +284,7 @@ lemma freeDeg_eq_zero_of_farY {Y : Finset V} (hY : IsFarY G i j Y) {y : V} (hy :
   rw [hset, Finset.card_insert_of_notMem hj_notin]
   omega
 
+/-- No admissible pair contains a vertex of `Y₃`. -/
 lemma no_pair_of_farY {F : Finset (Sym2 V)} (hF : Admissible G i j F) {Y : Finset V}
     (hY : IsFarY G i j Y) {y : V} (hy : y ∈ Y) (w : V) : s(w, y) ∉ F := by
   intro hw
@@ -283,6 +298,7 @@ lemma no_pair_of_farY {F : Finset (Sym2 V)} (hF : Admissible G i j F) {Y : Finse
     exact hw
   omega
 
+/-- A vertex of `Y₃` is at charged distance `3` from `U_i` for every admissible `F`. -/
 lemma three_le_chargedDist_of_farY {F : Finset (Sym2 V)} (hF : Admissible G i j F)
     {Y : Finset V} (hY : IsFarY G i j Y) {x y : V} (hy : y ∈ Y) (hx : x ∈ uniq G i j) :
     3 ≤ chargedDist G i j F x y := by
@@ -298,6 +314,7 @@ lemma three_le_chargedDist_of_farY {F : Finset (Sym2 V)} (hF : Admissible G i j 
   have hcd := chargedDist_cross (G := G) (i := i) (j := j) (F := F) hx hyU
   linarith
 
+/-- `κ_F ≤ 1 − 2τ + η − D₃` for every admissible `F`. -/
 theorem kappaF_le_tq_upper (hi : OneStepAt G μ i) (hj : OneStepAt G μ j)
     {F : Finset (Sym2 V)} (hF : Admissible G i j F) {η : ℝ}
     (hη : ∀ ρ, IsCoupling (resP μ i j) (resN μ i j) ρ → adjMass G ρ ≤ η)
@@ -322,7 +339,8 @@ theorem kappaF_le_tq_upper (hi : OneStepAt G μ i) (hj : OneStepAt G μ j)
   rw [W1_chargedDist_eq_resid hi hj F]
   linarith
 
-/-- **Theorem 5.3 (iii).** `κ_TQ ≤ κ_*` and `κ̄* ≤ κ̄_TQ`. -/
+/-- **Theorem 5.3 (iii).** `κ̲_TQ ≤ κ̲*` for every plan charged at least the distance that the
+local data certifies, and `κ̄* ≤ κ̄_TQ` for every `η' ≥ η`. -/
 theorem tq_range_paper (hi : OneStepAt G μ i) (hj : OneStepAt G μ j) :
     (∀ π c : V → V → ℝ, IsSubPlan (resP μ i j) (resN μ i j) π →
         (∀ x y, 0 < π x y → chargedDist G i j ∅ x y ≤ c x y) →
@@ -344,7 +362,8 @@ theorem tq_range_paper (hi : OneStepAt G μ i) (hj : OneStepAt G μ j) :
 
 /-- A coupling of the residuals moves at most `η'` along edges: any
 `B ≥ F + min{O_i, |r(i)| − F} + min{O_j, |r(j)| − F}` on `[0, F_ij]`, plus, over blocks that no
-supply–demand edge outside `{i, j}` crosses, the smaller of the capped supply and demand. -/
+supply–demand edge outside `{i, j}` crosses, the smaller of their capped supply and capped
+demand. -/
 theorem adjMass_le_blocks {β : Type*} [DecidableEq β] (hij : i ≠ j)
     (hρ : IsCoupling (resP μ i j) (resN μ i j) ρ) (b : V → β)
     (hb : ∀ x y, 0 < resP μ i j x → 0 < resN μ i j y → G.Adj x y →
@@ -457,8 +476,9 @@ theorem adjMass_le_blocks {β : Type*} [DecidableEq β] (hij : i ≠ j)
             (∑ y ∈ Finset.univ.filter (fun y => b y = l ∧ y ∉ ({i, j} : Finset V)), capD G μ i j y) :=
         add_le_add hat (outside_le_blocks hρ ({i, j} : Finset V) b hb)
 
-/-- **Theorem 5.3 (iv).** The bound `η'` is at least the maximum flow `η`, so it can be taken for
-`η'` in (ii) and (iii). -/
+/-- **Theorem 5.3 (iv).** The bound `η'` is at least the maximum flow `η`, so it can be taken in
+(ii) and (iii). The paper takes for `B` the largest value of the expression and for the blocks
+the connected components; the running time is not formalized. -/
 theorem tq_upper_blocks_paper {β : Type*} [DecidableEq β] (hi : OneStepAt G μ i)
     (hj : OneStepAt G μ j) (hij : i ≠ j) (b : V → β)
     (hb : ∀ x y, 0 < resP μ i j x → 0 < resN μ i j y → G.Adj x y →
